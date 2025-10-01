@@ -1,0 +1,2300 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="47" skipped="1" tests="48" time="10.945" timestamp="2025-10-01T19:36:30.067929+08:00" hostname="rijoshin-OMEN"><testcase classname="tests.test_data" name="test_get_batch" time="0.000"><failure message="NotImplementedError">def test_get_batch():
+        dataset = np.arange(0, 100)
+        context_length = 7
+        batch_size = 32
+        device = "cpu"
+    
+        # Sanity check to make sure that the random samples are indeed somewhat random.
+        starting_indices = Counter()
+        num_iters = 1000
+        for _ in range(num_iters):
+&gt;           x, y = run_get_batch(
+                dataset=dataset,
+                batch_size=batch_size,
+                context_length=context_length,
+                device=device,
+            )
+
+tests/test_data.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+dataset = array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+       17, 18, 19, 20, 21, 22, 23, 24, 25, ...72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
+       85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99])
+batch_size = 32, context_length = 7, device = 'cpu'
+
+    def run_get_batch(
+        dataset: npt.NDArray, batch_size: int, context_length: int, device: str
+    ) -&gt; tuple[torch.Tensor, torch.Tensor]:
+        """
+        Given a dataset (a 1D numpy array of integers) and a desired batch size and
+        context length, sample language modeling input sequences and their corresponding
+        labels from the dataset.
+    
+        Args:
+            dataset (np.array): 1D numpy array of integer token IDs in the dataset.
+            batch_size (int): Desired batch size to sample.
+            context_length (int): Desired context length of each sampled example.
+            device (str): PyTorch device string (e.g., 'cpu' or 'cuda:0') indicating the device
+                to place the sampled input sequences and labels on.
+    
+        Returns:
+            Tuple of torch.LongTensors of shape (batch_size, context_length). The first tuple item
+            is the sampled input sequences, and the second tuple item is the corresponding
+            language modeling labels.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:418: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_linear" time="0.008"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb15e89c10&gt;
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+in_embeddings = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+d_model = 64, d_ff = 128
+
+    def test_linear(numpy_snapshot, ts_state_dict, in_embeddings, d_model, d_ff):
+        w1_weight = ts_state_dict[0]["layers.0.ffn.w1.weight"]
+&gt;       output = run_linear(
+            d_in=d_model,
+            d_out=d_ff,
+            weights=w1_weight,
+            in_features=in_embeddings,
+        )
+
+tests/test_model.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+d_in = 64, d_out = 128
+weights = tensor([[ 0.0547,  0.0756,  0.0423,  ...,  0.1840,  0.0190, -0.0732],
+        [-0.0683,  0.0482,  0.0472,  ...,  0.193...1942, -0.0789,  ...,  0.0045, -0.1143,  0.0156],
+        [-0.1401, -0.1757, -0.0704,  ..., -0.0199, -0.0032, -0.0454]])
+in_features = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+
+    def run_linear(
+        d_in: int,
+        d_out: int,
+        weights: Float[Tensor, " d_out d_in"],
+        in_features: Float[Tensor, " ... d_in"],
+    ) -&gt; Float[Tensor, " ... d_out"]:
+        """
+        Given the weights of a Linear layer, compute the transformation of a batched input.
+    
+        Args:
+            in_dim (int): The size of the input dimension
+            out_dim (int): The size of the output dimension
+            weights (Float[Tensor, "d_out d_in"]): The linear weights to use
+            in_features (Float[Tensor, "... d_in"]): The output tensor to apply the function to
+    
+        Returns:
+            Float[Tensor, "... d_out"]: The transformed output of your linear module.
+        """
+    
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:32: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_embedding" time="0.005"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb15bc1fd0&gt;
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+in_indices = tensor([[5130, 8761, 2403, 3492, 2234, 1437, 5647, 7786, 1904, 6558, 9177, 7649],
+        [8235, 4285, 4217, 5482, 574... 861, 9322, 4143, 1833, 4502, 2050],
+        [ 907, 5061, 9813, 7793, 6212, 7893, 3454, 8112, 6322, 2511, 2434, 6879]])
+vocab_size = 10000, d_model = 64
+
+    def test_embedding(numpy_snapshot, ts_state_dict, in_indices, vocab_size, d_model):
+        embedding_weight = ts_state_dict[0]["token_embeddings.weight"]
+&gt;       output = run_embedding(
+            vocab_size=vocab_size,
+            d_model=d_model,
+            weights=embedding_weight,
+            token_ids=in_indices,
+        )
+
+tests/test_model.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab_size = 10000, d_model = 64
+weights = tensor([[ 0.6384, -0.3678,  0.2761,  ..., -0.1542, -0.6972,  0.4515],
+        [ 0.2662, -0.5991,  0.7674,  ...,  0.409...1477,  0.3167,  ..., -0.0552, -0.8565, -0.3290],
+        [-0.9148, -0.5046,  0.6417,  ...,  0.2892, -0.4009, -0.0566]])
+token_ids = tensor([[5130, 8761, 2403, 3492, 2234, 1437, 5647, 7786, 1904, 6558, 9177, 7649],
+        [8235, 4285, 4217, 5482, 574... 861, 9322, 4143, 1833, 4502, 2050],
+        [ 907, 5061, 9813, 7793, 6212, 7893, 3454, 8112, 6322, 2511, 2434, 6879]])
+
+    def run_embedding(
+        vocab_size: int,
+        d_model: int,
+        weights: Float[Tensor, " vocab_size d_model"],
+        token_ids: Int[Tensor, " ..."],
+    ) -&gt; Float[Tensor, " ... d_model"]:
+        """
+        Given the weights of an Embedding layer, get the embeddings for a batch of token ids.
+    
+        Args:
+            vocab_size (int): The number of embeddings in the vocabulary
+            d_model (int): The size of the embedding dimension
+            weights (Float[Tensor, "vocab_size d_model"]): The embedding vectors to fetch from
+            token_ids (Int[Tensor, "..."]): The set of token ids to fetch from the Embedding layer
+    
+        Returns:
+            Float[Tensor, "... d_model"]: Batch of embeddings returned by your Embedding layer.
+        """
+    
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:54: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_swiglu" time="0.004"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb15a72d50&gt;
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+in_embeddings = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+d_model = 64, d_ff = 128
+
+    def test_swiglu(numpy_snapshot, ts_state_dict, in_embeddings, d_model, d_ff):
+        w1_weight, w2_weight, w3_weight = [ts_state_dict[0][f"layers.0.ffn.{k}.weight"] for k in ["w1", "w2", "w3"]]
+    
+&gt;       actual_output = run_swiglu(
+            d_model=d_model,
+            d_ff=d_ff,
+            w1_weight=w1_weight,
+            w2_weight=w2_weight,
+            w3_weight=w3_weight,
+            in_features=in_embeddings,
+        )
+
+tests/test_model.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+d_model = 64, d_ff = 128
+w1_weight = tensor([[ 0.0547,  0.0756,  0.0423,  ...,  0.1840,  0.0190, -0.0732],
+        [-0.0683,  0.0482,  0.0472,  ...,  0.193...1942, -0.0789,  ...,  0.0045, -0.1143,  0.0156],
+        [-0.1401, -0.1757, -0.0704,  ..., -0.0199, -0.0032, -0.0454]])
+w2_weight = tensor([[ 1.8391e-01, -1.0857e-01, -6.5546e-02,  ..., -2.0131e-02,
+         -1.3820e-01, -1.5189e-01],
+        [ 8.824..., -5.9488e-02],
+        [ 4.7624e-02,  6.6320e-02,  2.5070e-02,  ..., -1.8528e-01,
+         -2.3557e-01,  1.5298e-04]])
+w3_weight = tensor([[-0.0112, -0.0014,  0.0783,  ..., -0.1642,  0.1339,  0.1096],
+        [ 0.0508,  0.1094,  0.0124,  ...,  0.012...1727, -0.0652,  ..., -0.0104,  0.2612,  0.1444],
+        [ 0.0774, -0.0382, -0.0424,  ...,  0.0895, -0.0262,  0.0613]])
+in_features = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+
+    def run_swiglu(
+        d_model: int,
+        d_ff: int,
+        w1_weight: Float[Tensor, " d_ff d_model"],
+        w2_weight: Float[Tensor, " d_model d_ff"],
+        w3_weight: Float[Tensor, " d_ff d_model"],
+        in_features: Float[Tensor, " ... d_model"],
+    ) -&gt; Float[Tensor, " ... d_model"]:
+        """Given the weights of a SwiGLU network, return
+        the output of your implementation with these weights.
+    
+        Args:
+            d_model (int): Dimensionality of the feedforward input and output.
+            d_ff (int): Dimensionality of the up-project happening internally to your swiglu.
+            w1_weight (Float[Tensor, "d_ff d_model"]): Stored weights for W1
+            w2_weight (Float[Tensor, "d_model d_ff"]): Stored weights for W2
+            w3_weight (Float[Tensor, "d_ff d_model"]): Stored weights for W3
+            in_features (Float[Tensor, "... d_model"]): Input embeddings to the feed-forward layer.
+    
+        Returns:
+            Float[Tensor, "... d_model"]: Output embeddings of the same shape as the input embeddings.
+        """
+        # Example:
+        # If your state dict keys match, you can use `load_state_dict()`
+        # swiglu.load_state_dict(weights)
+        # You can also manually assign the weights
+        # swiglu.w1.weight.data = w1_weight
+        # swiglu.w2.weight.data = w2_weight
+        # swiglu.w3.weight.data = w3_weight
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:86: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_scaled_dot_product_attention" time="0.002"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb15a2ff10&gt;
+q = tensor([[[-1.5256e+00, -7.5023e-01, -6.5398e-01,  ..., -8.6959e-01,
+          -3.3312e+00, -7.4787e-01],
+         [-2....3.2825e-01],
+         [-1.8315e-01,  2.0009e+00,  1.4760e-01,  ...,  1.2993e+00,
+          -5.7777e-01,  1.4148e+00]]])
+k = tensor([[[-1.0408,  0.9166, -1.3042,  ...,  0.7787, -0.7749, -0.1398],
+         [ 1.1414, -0.6354, -1.4702,  ...,  1.8...43,  0.2841,  ..., -0.6094,  0.1403,  1.3990],
+         [-0.1150,  0.0779,  1.3394,  ..., -0.3242, -0.8369,  0.8859]]])
+v = tensor([[[-0.0766,  0.3599, -0.7820,  ..., -0.5296,  1.3544,  1.3778],
+         [-0.0752, -0.4233,  0.4217,  ...,  2.3...59,  1.1937,  ...,  0.4603, -0.9189,  0.2698],
+         [-0.7093, -1.5744,  1.5026,  ..., -1.7090,  0.2552,  0.8367]]])
+mask = tensor([[[ True,  True, False, False,  True, False, False, False, False, False,
+          False, False,  True, False, ...,  True, False, False, False,  True, False,  True, False,  True,
+          False, False, False, False, False, False]]])
+
+    def test_scaled_dot_product_attention(numpy_snapshot, q, k, v, mask):
+&gt;       actual_output = run_scaled_dot_product_attention(Q=q, K=k, V=v, mask=mask)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_model.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+Q = tensor([[[-1.5256e+00, -7.5023e-01, -6.5398e-01,  ..., -8.6959e-01,
+          -3.3312e+00, -7.4787e-01],
+         [-2....3.2825e-01],
+         [-1.8315e-01,  2.0009e+00,  1.4760e-01,  ...,  1.2993e+00,
+          -5.7777e-01,  1.4148e+00]]])
+K = tensor([[[-1.0408,  0.9166, -1.3042,  ...,  0.7787, -0.7749, -0.1398],
+         [ 1.1414, -0.6354, -1.4702,  ...,  1.8...43,  0.2841,  ..., -0.6094,  0.1403,  1.3990],
+         [-0.1150,  0.0779,  1.3394,  ..., -0.3242, -0.8369,  0.8859]]])
+V = tensor([[[-0.0766,  0.3599, -0.7820,  ..., -0.5296,  1.3544,  1.3778],
+         [-0.0752, -0.4233,  0.4217,  ...,  2.3...59,  1.1937,  ...,  0.4603, -0.9189,  0.2698],
+         [-0.7093, -1.5744,  1.5026,  ..., -1.7090,  0.2552,  0.8367]]])
+mask = tensor([[[ True,  True, False, False,  True, False, False, False, False, False,
+          False, False,  True, False, ...,  True, False, False, False,  True, False,  True, False,  True,
+          False, False, False, False, False, False]]])
+
+    def run_scaled_dot_product_attention(
+        Q: Float[Tensor, " ... queries d_k"],
+        K: Float[Tensor, " ... keys d_k"],
+        V: Float[Tensor, " ... values d_v"],
+        mask: Float[Tensor, " ... queries keys"] | None = None,
+    ) -&gt; Float[Tensor, " ... queries d_v"]:
+        """
+        Given key (K), query (Q), and value (V) tensors, return
+        the output of your scaled dot product attention implementation.
+    
+        Args:
+            Q (Float[Tensor, " ... queries d_k"]): Query tensor
+            K (Float[Tensor, " ... keys d_k"]): Key tensor
+            V (Float[Tensor, " ... values d_v"]): Values tensor
+            mask (Float[Tensor, " ... queries keys"] | None): Mask tensor
+        Returns:
+            Float[Tensor, " ... queries d_v"]: Output of SDPA
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:107: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_4d_scaled_dot_product_attention" time="2.025"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb15b74850&gt;
+q = tensor([[[[-1.5256e+00, -7.5023e-01, -6.5398e-01,  ..., -8.6959e-01,
+           -3.3312e+00, -7.4787e-01],
+          [...825e-01],
+          [-1.8315e-01,  2.0009e+00,  1.4760e-01,  ...,  1.2993e+00,
+           -5.7777e-01,  1.4148e+00]]]])
+k = tensor([[[[-1.0408,  0.9166, -1.3042,  ...,  0.7787, -0.7749, -0.1398],
+          [ 1.1414, -0.6354, -1.4702,  ...,  1...,  0.2841,  ..., -0.6094,  0.1403,  1.3990],
+          [-0.1150,  0.0779,  1.3394,  ..., -0.3242, -0.8369,  0.8859]]]])
+v = tensor([[[[-0.0766,  0.3599, -0.7820,  ..., -0.5296,  1.3544,  1.3778],
+          [-0.0752, -0.4233,  0.4217,  ...,  2...,  1.1937,  ...,  0.4603, -0.9189,  0.2698],
+          [-0.7093, -1.5744,  1.5026,  ..., -1.7090,  0.2552,  0.8367]]]])
+mask = tensor([[[[ True,  True, False, False,  True, False, False, False, False, False,
+           False, False,  True, False... True, False, False, False,  True, False,  True, False,  True,
+           False, False, False, False, False, False]]]])
+
+    def test_4d_scaled_dot_product_attention(numpy_snapshot, q, k, v, mask):
+        # Shape: (batch_size, num_heads, seq_len, d_k)
+        q, k, v = (rearrange(x, "(batch head) seq d -&gt; batch head seq d", head=2) for x in (q, k, v))
+        mask = rearrange(mask, "(batch head) query key -&gt; batch head query key", head=2)
+    
+&gt;       actual_output = run_scaled_dot_product_attention(Q=q, K=k, V=v, mask=mask)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_model.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+Q = tensor([[[[-1.5256e+00, -7.5023e-01, -6.5398e-01,  ..., -8.6959e-01,
+           -3.3312e+00, -7.4787e-01],
+          [...825e-01],
+          [-1.8315e-01,  2.0009e+00,  1.4760e-01,  ...,  1.2993e+00,
+           -5.7777e-01,  1.4148e+00]]]])
+K = tensor([[[[-1.0408,  0.9166, -1.3042,  ...,  0.7787, -0.7749, -0.1398],
+          [ 1.1414, -0.6354, -1.4702,  ...,  1...,  0.2841,  ..., -0.6094,  0.1403,  1.3990],
+          [-0.1150,  0.0779,  1.3394,  ..., -0.3242, -0.8369,  0.8859]]]])
+V = tensor([[[[-0.0766,  0.3599, -0.7820,  ..., -0.5296,  1.3544,  1.3778],
+          [-0.0752, -0.4233,  0.4217,  ...,  2...,  1.1937,  ...,  0.4603, -0.9189,  0.2698],
+          [-0.7093, -1.5744,  1.5026,  ..., -1.7090,  0.2552,  0.8367]]]])
+mask = tensor([[[[ True,  True, False, False,  True, False, False, False, False, False,
+           False, False,  True, False... True, False, False, False,  True, False,  True, False,  True,
+           False, False, False, False, False, False]]]])
+
+    def run_scaled_dot_product_attention(
+        Q: Float[Tensor, " ... queries d_k"],
+        K: Float[Tensor, " ... keys d_k"],
+        V: Float[Tensor, " ... values d_v"],
+        mask: Float[Tensor, " ... queries keys"] | None = None,
+    ) -&gt; Float[Tensor, " ... queries d_v"]:
+        """
+        Given key (K), query (Q), and value (V) tensors, return
+        the output of your scaled dot product attention implementation.
+    
+        Args:
+            Q (Float[Tensor, " ... queries d_k"]): Query tensor
+            K (Float[Tensor, " ... keys d_k"]): Key tensor
+            V (Float[Tensor, " ... values d_v"]): Values tensor
+            mask (Float[Tensor, " ... queries keys"] | None): Mask tensor
+        Returns:
+            Float[Tensor, " ... queries d_v"]: Output of SDPA
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:107: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_multihead_self_attention" time="0.004"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb15a8ed10&gt;
+in_embeddings = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+d_model = 64, n_heads = 4
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+
+    def test_multihead_self_attention(numpy_snapshot, in_embeddings, d_model, n_heads, ts_state_dict):
+        d, _ = ts_state_dict
+        q_proj_weight, k_proj_weight, v_proj_weight, o_proj_weight = [
+            d[f"layers.0.attn.{k}_proj.weight"] for k in ["q", "k", "v", "output"]
+        ]
+&gt;       actual_output = run_multihead_self_attention(
+            d_model=d_model,
+            num_heads=n_heads,
+            q_proj_weight=q_proj_weight,
+            k_proj_weight=k_proj_weight,
+            v_proj_weight=v_proj_weight,
+            o_proj_weight=o_proj_weight,
+            in_features=in_embeddings,
+        )
+
+tests/test_model.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+d_model = 64, num_heads = 4
+q_proj_weight = tensor([[ 0.0372, -0.0888,  0.2558,  ...,  0.0049, -0.2693, -0.1108],
+        [ 0.0520,  0.0837, -0.0109,  ..., -0.006...1974, -0.1546,  ..., -0.1313,  0.0992, -0.1394],
+        [-0.0936,  0.2000, -0.0574,  ..., -0.0828,  0.1563,  0.1365]])
+k_proj_weight = tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.0271,  0.0840, -0.2509,  ..., -0.325...1004,  0.1376,  ...,  0.0082, -0.0004,  0.1317],
+        [-0.2910, -0.0298, -0.1720,  ..., -0.1184,  0.0639, -0.0232]])
+v_proj_weight = tensor([[-0.0538, -0.0038, -0.0073,  ...,  0.1269,  0.0679,  0.0620],
+        [-0.0155, -0.0231,  0.0393,  ...,  0.100...1402,  0.0214,  ...,  0.0210,  0.0694, -0.0717],
+        [ 0.0523,  0.0327,  0.0257,  ...,  0.0380, -0.0240,  0.1170]])
+o_proj_weight = tensor([[ 0.0676,  0.0116, -0.0078,  ..., -0.0227,  0.0357, -0.0327],
+        [ 0.0297,  0.1108, -0.1244,  ...,  0.081...0195,  0.0148,  ...,  0.0888,  0.0211,  0.0004],
+        [ 0.0432,  0.0543,  0.0269,  ..., -0.0546, -0.0417, -0.0533]])
+in_features = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+
+    def run_multihead_self_attention(
+        d_model: int,
+        num_heads: int,
+        q_proj_weight: Float[Tensor, " d_k d_in"],
+        k_proj_weight: Float[Tensor, " d_k d_in"],
+        v_proj_weight: Float[Tensor, " d_v d_in"],
+        o_proj_weight: Float[Tensor, " d_model d_v"],
+        in_features: Float[Tensor, " ... sequence_length d_in"],
+    ) -&gt; Float[Tensor, " ... sequence_length d_out"]:
+        """
+        Given the key, query, and value projection weights of a naive unbatched
+        implementation of multi-head attention, return the output of an optimized batched
+        implementation. This implementation should handle the key, query, and value projections
+        for all heads in a single matrix multiply.
+        This function should not use RoPE.
+        See section 3.2.2 of Vaswani et al., 2017.
+    
+        Args:
+            d_model (int): Dimensionality of the feedforward input and output.
+            num_heads (int): Number of heads to use in multi-headed attention.
+            max_seq_len (int): Maximum sequence length to pre-cache if your implementation does that.
+            q_proj_weight (Float[Tensor, "d_k d_in"]): Weights for the Q projection
+            k_proj_weight (Float[Tensor, "d_k d_in"]): Weights for the K projection
+            v_proj_weight (Float[Tensor, "d_k d_in"]): Weights for the V projection
+            o_proj_weight (Float[Tensor, "d_model d_v"]): Weights for the output projection
+            in_features (Float[Tensor, "... sequence_length d_in"]): Tensor to run your implementation on.
+    
+        Returns:
+            Float[Tensor, " ... sequence_length d_out"]: Tensor with the output of running your optimized, batched multi-headed attention
+            implementation with the given QKV projection weights and input features.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:141: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_multihead_self_attention_with_rope" time="0.004"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb15b74490&gt;
+in_embeddings = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+d_model = 64, n_heads = 4
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+n_keys = 16, theta = 10000.0, pos_ids = tensor([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]])
+
+    def test_multihead_self_attention_with_rope(
+        numpy_snapshot, in_embeddings, d_model, n_heads, ts_state_dict, n_keys, theta, pos_ids
+    ):
+        d, _ = ts_state_dict
+        q_proj_weight, k_proj_weight, v_proj_weight, o_proj_weight = [
+            d[f"layers.0.attn.{k}_proj.weight"] for k in ["q", "k", "v", "output"]
+        ]
+        pos_ids = rearrange(pos_ids, "seq -&gt; 1 seq")
+&gt;       actual_output = run_multihead_self_attention_with_rope(
+            d_model=d_model,
+            num_heads=n_heads,
+            max_seq_len=n_keys,
+            theta=theta,
+            q_proj_weight=q_proj_weight,
+            k_proj_weight=k_proj_weight,
+            v_proj_weight=v_proj_weight,
+            o_proj_weight=o_proj_weight,
+            in_features=in_embeddings,
+            token_positions=pos_ids,
+        )
+
+tests/test_model.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+d_model = 64, num_heads = 4, max_seq_len = 16, theta = 10000.0
+q_proj_weight = tensor([[ 0.0372, -0.0888,  0.2558,  ...,  0.0049, -0.2693, -0.1108],
+        [ 0.0520,  0.0837, -0.0109,  ..., -0.006...1974, -0.1546,  ..., -0.1313,  0.0992, -0.1394],
+        [-0.0936,  0.2000, -0.0574,  ..., -0.0828,  0.1563,  0.1365]])
+k_proj_weight = tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.0271,  0.0840, -0.2509,  ..., -0.325...1004,  0.1376,  ...,  0.0082, -0.0004,  0.1317],
+        [-0.2910, -0.0298, -0.1720,  ..., -0.1184,  0.0639, -0.0232]])
+v_proj_weight = tensor([[-0.0538, -0.0038, -0.0073,  ...,  0.1269,  0.0679,  0.0620],
+        [-0.0155, -0.0231,  0.0393,  ...,  0.100...1402,  0.0214,  ...,  0.0210,  0.0694, -0.0717],
+        [ 0.0523,  0.0327,  0.0257,  ...,  0.0380, -0.0240,  0.1170]])
+o_proj_weight = tensor([[ 0.0676,  0.0116, -0.0078,  ..., -0.0227,  0.0357, -0.0327],
+        [ 0.0297,  0.1108, -0.1244,  ...,  0.081...0195,  0.0148,  ...,  0.0888,  0.0211,  0.0004],
+        [ 0.0432,  0.0543,  0.0269,  ..., -0.0546, -0.0417, -0.0533]])
+in_features = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+token_positions = tensor([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]])
+
+    def run_multihead_self_attention_with_rope(
+        d_model: int,
+        num_heads: int,
+        max_seq_len: int,
+        theta: float,
+        q_proj_weight: Float[Tensor, " d_k d_in"],
+        k_proj_weight: Float[Tensor, " d_k d_in"],
+        v_proj_weight: Float[Tensor, " d_v d_in"],
+        o_proj_weight: Float[Tensor, " d_model d_v"],
+        in_features: Float[Tensor, " ... sequence_length d_in"],
+        token_positions: Int[Tensor, " ... sequence_length"] | None = None,
+    ) -&gt; Float[Tensor, " ... sequence_length d_out"]:
+        """
+        Given the key, query, and value projection weights of a naive unbatched
+        implementation of multi-head attention, return the output of an optimized batched
+        implementation. This implementation should handle the key, query, and value projections
+        for all heads in a single matrix multiply.
+        This version of MHA should include RoPE.
+        In this case, the RoPE embedding dimension must be the head embedding dimension (d_model // num_heads).
+        See section 3.2.2 of Vaswani et al., 2017.
+    
+        Args:
+            d_model (int): Dimensionality of the feedforward input and output.
+            num_heads (int): Number of heads to use in multi-headed attention.
+            max_seq_len (int): Maximum sequence length to pre-cache if your implementation does that.
+            theta (float): RoPE parameter.
+            q_proj_weight (Float[Tensor, "d_k d_in"]): Weights for the Q projection
+            k_proj_weight (Float[Tensor, "d_k d_in"]): Weights for the K projection
+            v_proj_weight (Float[Tensor, "d_k d_in"]): Weights for the V projection
+            o_proj_weight (Float[Tensor, "d_model d_v"]): Weights for the output projection
+            in_features (Float[Tensor, "... sequence_length d_in"]): Tensor to run your implementation on.
+            token_positions (Int[Tensor, " ... sequence_length"] | None): Optional tensor with the positions of the tokens
+    
+        Returns:
+            Float[Tensor, " ... sequence_length d_out"]: Tensor with the output of running your optimized, batched multi-headed attention
+            implementation with the given QKV projection weights and input features.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:181: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_transformer_lm" time="0.004"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb0b074810&gt;, vocab_size = 10000, n_keys = 16, d_model = 64, n_layers = 3, n_heads = 4, d_ff = 128, theta = 10000.0
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+in_indices = tensor([[5130, 8761, 2403, 3492, 2234, 1437, 5647, 7786, 1904, 6558, 9177, 7649],
+        [8235, 4285, 4217, 5482, 574... 861, 9322, 4143, 1833, 4502, 2050],
+        [ 907, 5061, 9813, 7793, 6212, 7893, 3454, 8112, 6322, 2511, 2434, 6879]])
+
+    def test_transformer_lm(
+        numpy_snapshot, vocab_size, n_keys, d_model, n_layers, n_heads, d_ff, theta, ts_state_dict, in_indices
+    ):
+        state_dict, _ = ts_state_dict
+    
+&gt;       actual_output = run_transformer_lm(
+            vocab_size=vocab_size,
+            context_length=n_keys,
+            d_model=d_model,
+            num_layers=n_layers,
+            num_heads=n_heads,
+            d_ff=d_ff,
+            rope_theta=theta,
+            weights=state_dict,
+            in_indices=in_indices,
+        )
+
+tests/test_model.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab_size = 10000, context_length = 16, d_model = 64, num_layers = 3, num_heads = 4, d_ff = 128, rope_theta = 10000.0
+weights = {'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.0271... 0.0214,  ...,  0.0210,  0.0694, -0.0717],
+        [ 0.0523,  0.0327,  0.0257,  ...,  0.0380, -0.0240,  0.1170]]), ...}
+in_indices = tensor([[5130, 8761, 2403, 3492, 2234, 1437, 5647, 7786, 1904, 6558, 9177, 7649],
+        [8235, 4285, 4217, 5482, 574... 861, 9322, 4143, 1833, 4502, 2050],
+        [ 907, 5061, 9813, 7793, 6212, 7893, 3454, 8112, 6322, 2511, 2434, 6879]])
+
+    def run_transformer_lm(
+        vocab_size: int,
+        context_length: int,
+        d_model: int,
+        num_layers: int,
+        num_heads: int,
+        d_ff: int,
+        rope_theta: float,
+        weights: dict[str, Tensor],
+        in_indices: Int[Tensor, " batch_size sequence_length"],
+    ) -&gt; Float[Tensor, " batch_size sequence_length vocab_size"]:
+        """Given the weights of a Transformer language model and input indices,
+        return the output of running a forward pass on the input indices.
+    
+        This function should use RoPE.
+    
+        Args:
+            vocab_size (int): The number of unique items in the output vocabulary to be predicted.
+            context_length (int): The maximum number of tokens to process at once.
+            d_model (int): The dimensionality of the model embeddings and sublayer outputs.
+            num_layers (int): The number of Transformer layers to use.
+            num_heads (int): Number of heads to use in multi-headed attention. `d_model` must be
+                evenly divisible by `num_heads`.
+            d_ff (int): Dimensionality of the feed-forward inner layer (section 3.3).
+            rope_theta (float): The RoPE $\Theta$ parameter.
+            weights (dict[str, Tensor]):
+                State dict of our reference implementation. {num_layers} refers to an
+                integer between `0` and `num_layers - 1` (the layer index).
+                The keys of this dictionary are:
+                - `token_embeddings.weight`
+                    Token embedding matrix. Shape is (vocab_size, d_model).
+                - `layers.{num_layers}.attn.q_proj.weight`
+                    The query projections for all `num_heads` attention heads.
+                    Shape is (num_heads * (d_model / num_heads), d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_k),
+                    so `attn.q_proj.weight == torch.cat([q_heads.0.weight, ..., q_heads.N.weight], dim=0)`.
+                - `layers.{num_layers}.attn.k_proj.weight`
+                    The key projections for all `num_heads` attention heads.
+                    Shape is (num_heads * (d_model / num_heads), d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_k),
+                    so `attn.k_proj.weight == torch.cat([k_heads.0.weight, ..., k_heads.N.weight], dim=0)`.
+                - `layers.{num_layers}.attn.v_proj.weight`
+                    The value projections for all `num_heads` attention heads.
+                    Shape is (num_heads * (d_model / num_heads), d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_v),
+                    so `attn.v_proj.weight == torch.cat([v_heads.0.weight, ..., v_heads.N.weight], dim=0)`.
+                - `layers.{num_layers}.attn.output_proj.weight`
+                    Weight of the multi-head self-attention output projection
+                    Shape is ((d_model / num_heads) * num_heads, d_model).
+                - `layers.{num_layers}.ln1.weight`
+                    Weights of affine transform for the first RMSNorm
+                    applied in the transformer block.
+                    Shape is (d_model,).
+                - `layers.{num_layers}.ffn.w1.weight`
+                    Weight of the first linear transformation in the FFN.
+                    Shape is (d_model, d_ff).
+                - `layers.{num_layers}.ffn.w2.weight`
+                    Weight of the second linear transformation in the FFN.
+                    Shape is (d_ff, d_model).
+                - `layers.{num_layers}.ffn.w3.weight`
+                    Weight of the third linear transformation in the FFN.
+                    Shape is (d_model, d_ff).
+                - `layers.{num_layers}.ln2.weight`
+                    Weights of affine transform for the second RMSNorm
+                    applied in the transformer block.
+                    Shape is (d_model,).
+                - `ln_final.weight`
+                    Weights of affine transform for RMSNorm applied to the output of the final transformer block.
+                    Shape is (d_model, ).
+                - `lm_head.weight`
+                    Weights of the language model output embedding.
+                    Shape is (vocab_size, d_model).
+            in_indices (Int[Tensor, "batch_size sequence_length"]) Tensor with input indices to run the language model on. Shape is (batch_size, sequence_length), where
+                `sequence_length` is at most `context_length`.
+    
+        Returns:
+            Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
+            next-word distribution for each token.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:358: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_transformer_lm_truncated_input" time="0.004"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb0b0c8690&gt;, vocab_size = 10000, n_keys = 16, d_model = 64, n_layers = 3, n_heads = 4, d_ff = 128, theta = 10000.0
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+in_indices = tensor([[5130, 8761, 2403, 3492, 2234, 1437, 5647, 7786, 1904, 6558, 9177, 7649],
+        [8235, 4285, 4217, 5482, 574... 861, 9322, 4143, 1833, 4502, 2050],
+        [ 907, 5061, 9813, 7793, 6212, 7893, 3454, 8112, 6322, 2511, 2434, 6879]])
+
+    def test_transformer_lm_truncated_input(
+        numpy_snapshot, vocab_size, n_keys, d_model, n_layers, n_heads, d_ff, theta, ts_state_dict, in_indices
+    ):
+        in_indices_truncated = in_indices[..., : in_indices.shape[-1] // 2]
+&gt;       truncated_actual_output = run_transformer_lm(
+            vocab_size=vocab_size,
+            context_length=n_keys,
+            d_model=d_model,
+            num_layers=n_layers,
+            num_heads=n_heads,
+            d_ff=d_ff,
+            rope_theta=theta,
+            weights=ts_state_dict[0],
+            in_indices=in_indices_truncated,
+        )
+
+tests/test_model.py:140: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab_size = 10000, context_length = 16, d_model = 64, num_layers = 3, num_heads = 4, d_ff = 128, rope_theta = 10000.0
+weights = {'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.0271... 0.0214,  ...,  0.0210,  0.0694, -0.0717],
+        [ 0.0523,  0.0327,  0.0257,  ...,  0.0380, -0.0240,  0.1170]]), ...}
+in_indices = tensor([[5130, 8761, 2403, 3492, 2234, 1437],
+        [8235, 4285, 4217, 5482, 5743,  689],
+        [9452, 2404, 8779, 1759, 9010, 8197],
+        [ 907, 5061, 9813, 7793, 6212, 7893]])
+
+    def run_transformer_lm(
+        vocab_size: int,
+        context_length: int,
+        d_model: int,
+        num_layers: int,
+        num_heads: int,
+        d_ff: int,
+        rope_theta: float,
+        weights: dict[str, Tensor],
+        in_indices: Int[Tensor, " batch_size sequence_length"],
+    ) -&gt; Float[Tensor, " batch_size sequence_length vocab_size"]:
+        """Given the weights of a Transformer language model and input indices,
+        return the output of running a forward pass on the input indices.
+    
+        This function should use RoPE.
+    
+        Args:
+            vocab_size (int): The number of unique items in the output vocabulary to be predicted.
+            context_length (int): The maximum number of tokens to process at once.
+            d_model (int): The dimensionality of the model embeddings and sublayer outputs.
+            num_layers (int): The number of Transformer layers to use.
+            num_heads (int): Number of heads to use in multi-headed attention. `d_model` must be
+                evenly divisible by `num_heads`.
+            d_ff (int): Dimensionality of the feed-forward inner layer (section 3.3).
+            rope_theta (float): The RoPE $\Theta$ parameter.
+            weights (dict[str, Tensor]):
+                State dict of our reference implementation. {num_layers} refers to an
+                integer between `0` and `num_layers - 1` (the layer index).
+                The keys of this dictionary are:
+                - `token_embeddings.weight`
+                    Token embedding matrix. Shape is (vocab_size, d_model).
+                - `layers.{num_layers}.attn.q_proj.weight`
+                    The query projections for all `num_heads` attention heads.
+                    Shape is (num_heads * (d_model / num_heads), d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_k),
+                    so `attn.q_proj.weight == torch.cat([q_heads.0.weight, ..., q_heads.N.weight], dim=0)`.
+                - `layers.{num_layers}.attn.k_proj.weight`
+                    The key projections for all `num_heads` attention heads.
+                    Shape is (num_heads * (d_model / num_heads), d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_k),
+                    so `attn.k_proj.weight == torch.cat([k_heads.0.weight, ..., k_heads.N.weight], dim=0)`.
+                - `layers.{num_layers}.attn.v_proj.weight`
+                    The value projections for all `num_heads` attention heads.
+                    Shape is (num_heads * (d_model / num_heads), d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_v),
+                    so `attn.v_proj.weight == torch.cat([v_heads.0.weight, ..., v_heads.N.weight], dim=0)`.
+                - `layers.{num_layers}.attn.output_proj.weight`
+                    Weight of the multi-head self-attention output projection
+                    Shape is ((d_model / num_heads) * num_heads, d_model).
+                - `layers.{num_layers}.ln1.weight`
+                    Weights of affine transform for the first RMSNorm
+                    applied in the transformer block.
+                    Shape is (d_model,).
+                - `layers.{num_layers}.ffn.w1.weight`
+                    Weight of the first linear transformation in the FFN.
+                    Shape is (d_model, d_ff).
+                - `layers.{num_layers}.ffn.w2.weight`
+                    Weight of the second linear transformation in the FFN.
+                    Shape is (d_ff, d_model).
+                - `layers.{num_layers}.ffn.w3.weight`
+                    Weight of the third linear transformation in the FFN.
+                    Shape is (d_model, d_ff).
+                - `layers.{num_layers}.ln2.weight`
+                    Weights of affine transform for the second RMSNorm
+                    applied in the transformer block.
+                    Shape is (d_model,).
+                - `ln_final.weight`
+                    Weights of affine transform for RMSNorm applied to the output of the final transformer block.
+                    Shape is (d_model, ).
+                - `lm_head.weight`
+                    Weights of the language model output embedding.
+                    Shape is (vocab_size, d_model).
+            in_indices (Int[Tensor, "batch_size sequence_length"]) Tensor with input indices to run the language model on. Shape is (batch_size, sequence_length), where
+                `sequence_length` is at most `context_length`.
+    
+        Returns:
+            Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
+            next-word distribution for each token.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:358: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_transformer_block" time="0.004"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb15b77e90&gt;
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+in_embeddings = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+d_model = 64, n_heads = 4, d_ff = 128, n_keys = 16, theta = 10000.0
+
+    def test_transformer_block(numpy_snapshot, ts_state_dict, in_embeddings, d_model, n_heads, d_ff, n_keys, theta):
+        block_weights = {k.replace("layers.0.", ""): v for k, v in ts_state_dict[0].items() if "layers.0." in k}
+    
+&gt;       actual_output = run_transformer_block(
+            d_model=d_model,
+            num_heads=n_heads,
+            d_ff=d_ff,
+            max_seq_len=n_keys,
+            theta=theta,
+            weights=block_weights,
+            in_features=in_embeddings,
+        )
+
+tests/test_model.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+d_model = 64, num_heads = 4, d_ff = 128, max_seq_len = 16, theta = 10000.0
+weights = {'attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.0271,  0.0840... 0.0214,  ...,  0.0210,  0.0694, -0.0717],
+        [ 0.0523,  0.0327,  0.0257,  ...,  0.0380, -0.0240,  0.1170]]), ...}
+in_features = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+
+    def run_transformer_block(
+        d_model: int,
+        num_heads: int,
+        d_ff: int,
+        max_seq_len: int,
+        theta: float,
+        weights: dict[str, Tensor],
+        in_features: Float[Tensor, " batch sequence_length d_model"],
+    ) -&gt; Float[Tensor, " batch sequence_length d_model"]:
+        """
+        Given the weights of a pre-norm Transformer block and input features,
+        return the output of running the Transformer block on the input features.
+    
+        This function should use RoPE.
+        Depending on your implementation, you may simply need to pass the relevant args
+        to your TransformerBlock constructor, or you may need to initialize your own RoPE
+        class and pass that instead.
+    
+        Args:
+            d_model (int): The dimensionality of the Transformer block input.
+            num_heads (int): Number of heads to use in multi-headed attention. `d_model` must be
+                evenly divisible by `num_heads`.
+            d_ff (int): Dimensionality of the feed-forward inner layer.
+            max_seq_len (int): Maximum sequence length to pre-cache if your implementation does that.
+            theta (float): RoPE parameter.
+            weights (dict[str, Tensor]):
+                State dict of our reference implementation.
+                The keys of this dictionary are:
+                - `attn.q_proj.weight`
+                    The query projections for all `num_heads` attention heads.
+                    Shape is (d_model, d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_k),
+                    so `attn.q_proj.weight == torch.cat([q_heads.0.weight, ..., q_heads.N.weight], dim=0)`.
+                - `attn.k_proj.weight`
+                    The key projections for all `num_heads` attention heads.
+                    Shape is (d_model, d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_k),
+                    so `attn.k_proj.weight == torch.cat([k_heads.0.weight, ..., k_heads.N.weight], dim=0)`.
+                - `attn.v_proj.weight`
+                    The value projections for all `num_heads` attention heads.
+                    Shape is (d_model, d_model).
+                    The rows are ordered by matrices of shape (num_heads, d_v),
+                    so `attn.v_proj.weight == torch.cat([v_heads.0.weight, ..., v_heads.N.weight], dim=0)`.
+                - `attn.output_proj.weight`
+                    Weight of the multi-head self-attention output projection
+                    Shape is (d_model, d_model).
+                - `ln1.weight`
+                    Weights of affine transform for the first RMSNorm
+                    applied in the transformer block.
+                    Shape is (d_model,).
+                - `ffn.w1.weight`
+                    Weight of the first linear transformation in the FFN.
+                    Shape is (d_model, d_ff).
+                - `ffn.w2.weight`
+                    Weight of the second linear transformation in the FFN.
+                    Shape is (d_ff, d_model).
+                - `ffn.w3.weight`
+                    Weight of the third linear transformation in the FFN.
+                    Shape is (d_model, d_ff).
+                - `ln2.weight`
+                    Weights of affine transform for the second RMSNorm
+                    applied in the transformer block.
+                    Shape is (d_model,).
+            in_features (Float[Tensor, "batch sequence_length d_model"]):
+                Tensor to run your implementation on.
+    
+        Returns:
+            Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
+            running the Transformer block on the input features while using RoPE.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:276: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_rmsnorm" time="0.003"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb0b076010&gt;
+ts_state_dict = ({'layers.0.attn.k_proj.weight': tensor([[ 0.0890,  0.1049,  0.0980,  ...,  0.1314,  0.0594, -0.0206],
+        [ 0.027...7,  ...,  0.0380, -0.0240,  0.1170]]), ...}, {'context_length': 16, 'd_ff': 128, 'd_model': 64, 'ffn_type': None, ...})
+in_embeddings = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+
+    def test_rmsnorm(numpy_snapshot, ts_state_dict, in_embeddings):
+        state_dict, _ = ts_state_dict
+        reference_weights = state_dict["layers.1.ln1.weight"]
+        d_model = reference_weights.shape[0]
+    
+&gt;       actual_output = run_rmsnorm(d_model=d_model, eps=1e-5, weights=reference_weights, in_features=in_embeddings)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_model.py:181: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+d_model = 64, eps = 1e-05
+weights = tensor([0.9050, 0.8366, 0.7248, 0.6513, 0.8690, 0.7719, 0.8492, 0.8615, 0.6426,
+        0.9254, 0.7387, 0.7531, 0.9166....8457, 0.8530, 0.8500,
+        0.7135, 0.6711, 0.7081, 0.8161, 0.9134, 0.7955, 0.7472, 0.6888, 0.7708,
+        0.6498])
+in_features = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+
+    def run_rmsnorm(
+        d_model: int,
+        eps: float,
+        weights: Float[Tensor, " d_model"],
+        in_features: Float[Tensor, " ... d_model"],
+    ) -&gt; Float[Tensor, " ... d_model"]:
+        """Given the weights of a RMSNorm affine transform,
+        return the output of running RMSNorm on the input features.
+    
+        Args:
+            d_model (int): The dimensionality of the RMSNorm input.
+            eps: (float): A value added to the denominator for numerical stability.
+            weights (Float[Tensor, "d_model"]): RMSNorm weights.
+            in_features (Float[Tensor, "... d_model"]): Input features to run RMSNorm on. Can have arbitrary leading
+                dimensions.
+    
+        Returns:
+            Float[Tensor,"... d_model"]: Tensor of with the same shape as `in_features` with the output of running
+            RMSNorm of the `in_features`.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:381: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_rope" time="0.001"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb0b0d69d0&gt;
+in_embeddings = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+d_model = 64, theta = 10000.0, n_queries = 12, pos_ids = tensor([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11])
+
+    def test_rope(numpy_snapshot, in_embeddings, d_model, theta, n_queries, pos_ids):
+&gt;       output = run_rope(
+            d_model, theta=theta, max_seq_len=n_queries, in_query_or_key=in_embeddings, token_positions=pos_ids
+        )
+
+tests/test_model.py:187: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+d_k = 64, theta = 10000.0, max_seq_len = 12
+in_query_or_key = tensor([[[-0.9414,  1.2632, -0.1838,  ..., -0.1941,  0.0048, -1.3165],
+         [ 0.0204, -0.1652,  0.2109,  ...,  0.6...73, -0.5486,  ...,  1.5676, -1.1472, -1.5822],
+         [ 1.5936, -0.4113,  0.6037,  ..., -0.6494,  1.2858,  0.4321]]])
+token_positions = tensor([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11])
+
+    def run_rope(
+        d_k: int,
+        theta: float,
+        max_seq_len: int,
+        in_query_or_key: Float[Tensor, " ... sequence_length d_k"],
+        token_positions: Int[Tensor, " ... sequence_length"],
+    ) -&gt; Float[Tensor, " ... sequence_length d_k"]:
+        """
+        Run RoPE for a given input tensor.
+    
+        Args:
+            d_k (int): Embedding dimension size for the query or key tensor.
+            theta (float): RoPE parameter.
+            max_seq_len (int): Maximum sequence length to pre-cache if your implementation does that.
+            in_query_or_key (Float[Tensor, "... sequence_length d_k"]): Input tensor to run RoPE on.
+            token_positions (Int[Tensor, "... sequence_length"]): Tensor of shape (batch_size, sequence_length) with the token positions
+        Returns:
+            Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:203: NotImplementedError</failure></testcase><testcase classname="tests.test_model" name="test_silu_matches_pytorch" time="0.000"><failure message="NotImplementedError">def test_silu_matches_pytorch():
+        x = torch.tensor(
+            [
+                [0.2352, 0.9259, 0.5189, 0.4725, 0.9730],
+                [0.7581, 0.9692, 0.2129, 0.9345, 0.0149],
+            ]
+        )
+        expected_output = F.silu(x)
+&gt;       actual_output = run_silu(x)
+                        ^^^^^^^^^^^
+
+tests/test_model.py:201: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+in_features = tensor([[0.2352, 0.9259, 0.5189, 0.4725, 0.9730],
+        [0.7581, 0.9692, 0.2129, 0.9345, 0.0149]])
+
+    def run_silu(in_features: Float[Tensor, " ..."]) -&gt; Float[Tensor, " ..."]:
+        """Given a tensor of inputs, return the output of applying SiLU
+        to each element.
+    
+        Args:
+            in_features(Float[Tensor, "..."]): Input features to run SiLU on. Shape is arbitrary.
+    
+        Returns:
+            Float[Tensor,"..."]: of with the same shape as `in_features` with the output of applying
+            SiLU to each element.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:395: NotImplementedError</failure></testcase><testcase classname="tests.test_nn_utils" name="test_softmax_matches_pytorch" time="0.027"><failure message="NotImplementedError">def test_softmax_matches_pytorch():
+        x = torch.tensor(
+            [
+                [0.4655, 0.8303, 0.9608, 0.9656, 0.6840],
+                [0.2583, 0.2198, 0.9334, 0.2995, 0.1722],
+                [0.1573, 0.6860, 0.1327, 0.7284, 0.6811],
+            ]
+        )
+        expected = F.softmax(x, dim=-1)
+&gt;       numpy.testing.assert_allclose(run_softmax(x, dim=-1).detach().numpy(), expected.detach().numpy(), atol=1e-6)
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_nn_utils.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+in_features = tensor([[0.4655, 0.8303, 0.9608, 0.9656, 0.6840],
+        [0.2583, 0.2198, 0.9334, 0.2995, 0.1722],
+        [0.1573, 0.6860, 0.1327, 0.7284, 0.6811]]), dim = -1
+
+    def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -&gt; Float[Tensor, " ..."]:
+        """
+        Given a tensor of inputs, return the output of softmaxing the given `dim`
+        of the input.
+    
+        Args:
+            in_features (Float[Tensor, "..."]): Input features to softmax. Shape is arbitrary.
+            dim (int): Dimension of the `in_features` to apply softmax to.
+    
+        Returns:
+            Float[Tensor, "..."]: Tensor of with the same shape as `in_features` with the output of
+            softmax normalizing the specified `dim`.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:434: NotImplementedError</failure></testcase><testcase classname="tests.test_nn_utils" name="test_cross_entropy" time="0.001"><failure message="NotImplementedError">def test_cross_entropy():
+        inputs = torch.tensor(
+            [
+                [
+                    [0.1088, 0.1060, 0.6683, 0.5131, 0.0645],
+                    [0.4538, 0.6852, 0.2520, 0.3792, 0.2675],
+                    [0.4578, 0.3357, 0.6384, 0.0481, 0.5612],
+                    [0.9639, 0.8864, 0.1585, 0.3038, 0.0350],
+                ],
+                [
+                    [0.3356, 0.9013, 0.7052, 0.8294, 0.8334],
+                    [0.6333, 0.4434, 0.1428, 0.5739, 0.3810],
+                    [0.9476, 0.5917, 0.7037, 0.2987, 0.6208],
+                    [0.8541, 0.1803, 0.2054, 0.4775, 0.8199],
+                ],
+            ]
+        )
+        targets = torch.tensor([[1, 0, 2, 2], [4, 1, 4, 0]])
+        expected = F.cross_entropy(inputs.view(-1, inputs.size(-1)), targets.view(-1))
+        numpy.testing.assert_allclose(
+&gt;           run_cross_entropy(inputs.view(-1, inputs.size(-1)), targets.view(-1)).detach().numpy(),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            expected.detach().numpy(),
+            atol=1e-4,
+        )
+
+tests/test_nn_utils.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+inputs = tensor([[0.1088, 0.1060, 0.6683, 0.5131, 0.0645],
+        [0.4538, 0.6852, 0.2520, 0.3792, 0.2675],
+        [0.4578, 0..., 0.5739, 0.3810],
+        [0.9476, 0.5917, 0.7037, 0.2987, 0.6208],
+        [0.8541, 0.1803, 0.2054, 0.4775, 0.8199]])
+targets = tensor([1, 0, 2, 2, 4, 1, 4, 0])
+
+    def run_cross_entropy(
+        inputs: Float[Tensor, " batch_size vocab_size"], targets: Int[Tensor, " batch_size"]
+    ) -&gt; Float[Tensor, ""]:
+        """Given a tensor of inputs and targets, compute the average cross-entropy
+        loss across examples.
+    
+        Args:
+            inputs (Float[Tensor, "batch_size vocab_size"]): inputs[i][j] is the
+                unnormalized logit of jth class for the ith example.
+            targets (Int[Tensor, "batch_size"]): Tensor of shape (batch_size,) with the index of the correct class.
+                Each value must be between 0 and `num_classes - 1`.
+    
+        Returns:
+            Float[Tensor, ""]: The average cross-entropy loss across examples.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:452: NotImplementedError</failure></testcase><testcase classname="tests.test_nn_utils" name="test_gradient_clipping" time="1.893"><failure message="NotImplementedError">def test_gradient_clipping():
+        tensors = [torch.randn((5, 5)) for _ in range(6)]
+        max_norm = 1e-2
+    
+        t1 = tuple(torch.nn.Parameter(torch.clone(t)) for t in tensors)
+        # Test freezing one parameter.
+        t1[-1].requires_grad_(False)
+    
+        loss = torch.cat(t1).sum()
+        loss.backward()
+        clip_grad_norm_(t1, max_norm)
+        t1_grads = [torch.clone(t.grad) for t in t1 if t.grad is not None]
+    
+        t1_c = tuple(torch.nn.Parameter(torch.clone(t)) for t in tensors)
+        t1_c[-1].requires_grad_(False)
+        loss_c = torch.cat(t1_c).sum()
+        loss_c.backward()
+&gt;       run_gradient_clipping(t1_c, max_norm)
+
+tests/test_nn_utils.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+parameters = (Parameter containing:
+tensor([[-1.1690, -1.0330,  0.1898, -0.9892,  0.2509],
+        [-1.6767,  1.4562,  0.9681, -0.2....9786],
+        [-0.3197,  1.8108, -1.2725, -1.1709,  0.8299],
+        [ 2.0029,  1.7995, -0.2501,  0.1244, -0.4229]]))
+max_l2_norm = 0.01
+
+    def run_gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float) -&gt; None:
+        """Given a set of parameters, clip their combined gradients to have l2 norm at most max_l2_norm.
+    
+        Args:
+            parameters (Iterable[torch.nn.Parameter]): collection of trainable parameters.
+            max_l2_norm (float): a positive value containing the maximum l2-norm.
+    
+        The gradients of the parameters (parameter.grad) should be modified in-place.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:464: NotImplementedError</failure></testcase><testcase classname="tests.test_optimizer" name="test_adamw" time="0.186"><failure message="NotImplementedError">numpy_snapshot = &lt;tests.conftest.NumpySnapshot object at 0x79fb0b0d9190&gt;
+
+    def test_adamw(numpy_snapshot):
+        """
+        Our reference implementation yields slightly different results than the
+        PyTorch AdamW, since there are a couple different ways that you can apply
+        weight decay that are equivalent in principle, but differ in practice due to
+        floating point behavior. So, we test that the provided implementation matches
+        _either_ our reference implementation's expected results or those from the PyTorch AdamW.
+        """
+        # expected_weights = torch.load(FIXTURES_PATH / "adamw_expected_params.pt")
+        pytorch_weights = _optimize(torch.optim.AdamW)
+&gt;       actual_weights = _optimize(get_adamw_cls())
+                                   ^^^^^^^^^^^^^^^
+
+tests/test_optimizer.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def get_adamw_cls() -&gt; Any:
+        """
+        Returns a torch.optim.Optimizer that implements AdamW.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:471: NotImplementedError</failure></testcase><testcase classname="tests.test_optimizer" name="test_get_lr_cosine_schedule" time="0.000"><failure message="NotImplementedError">def test_get_lr_cosine_schedule():
+        max_learning_rate = 1
+        min_learning_rate = 1 * 0.1
+        warmup_iters = 7
+        cosine_cycle_iters = 21
+    
+        expected_lrs = [
+            0,
+            0.14285714285714285,
+            0.2857142857142857,
+            0.42857142857142855,
+            0.5714285714285714,
+            0.7142857142857143,
+            0.8571428571428571,
+            1.0,
+            0.9887175604818206,
+            0.9554359905560885,
+            0.9018241671106134,
+            0.8305704108364301,
+            0.7452476826029011,
+            0.6501344202803414,
+            0.55,
+            0.44986557971965857,
+            0.3547523173970989,
+            0.26942958916356996,
+            0.19817583288938662,
+            0.14456400944391146,
+            0.11128243951817937,
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+        ]
+&gt;       actual_lrs = [
+            run_get_lr_cosine_schedule(
+                it=it,
+                max_learning_rate=max_learning_rate,
+                min_learning_rate=min_learning_rate,
+                warmup_iters=warmup_iters,
+                cosine_cycle_iters=cosine_cycle_iters,
+            )
+            for it in range(25)
+        ]
+
+tests/test_optimizer.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_optimizer.py:86: in &lt;listcomp&gt;
+    run_get_lr_cosine_schedule(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+it = 0, max_learning_rate = 1, min_learning_rate = 0.1, warmup_iters = 7, cosine_cycle_iters = 21
+
+    def run_get_lr_cosine_schedule(
+        it: int,
+        max_learning_rate: float,
+        min_learning_rate: float,
+        warmup_iters: int,
+        cosine_cycle_iters: int,
+    ):
+        """
+        Given the parameters of a cosine learning rate decay schedule (with linear
+        warmup) and an iteration number, return the learning rate at the given
+        iteration under the specified schedule.
+    
+        Args:
+            it (int): Iteration number to get learning rate for.
+            max_learning_rate (float): alpha_max, the maximum learning rate for
+                cosine learning rate schedule (with warmup).
+            min_learning_rate (float): alpha_min, the minimum / final learning rate for
+                the cosine learning rate schedule (with warmup).
+            warmup_iters (int): T_w, the number of iterations to linearly warm-up
+                the learning rate.
+            cosine_cycle_iters (int): T_c, the number of cosine annealing iterations.
+    
+        Returns:
+            Learning rate at the given iteration under the specified schedule.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:499: NotImplementedError</failure></testcase><testcase classname="tests.test_serialization" name="test_checkpointing" time="0.001"><failure message="NotImplementedError">tmp_path = PosixPath('/tmp/pytest-of-rj/pytest-0/test_checkpointing0')
+
+    def test_checkpointing(tmp_path):
+        torch.manual_seed(42)
+        d_input = 100
+        d_output = 10
+        num_iters = 10
+    
+        model = _TestNet(d_input=d_input, d_output=d_output)
+&gt;       optimizer = get_adamw_cls()(
+                    ^^^^^^^^^^^^^^^
+            model.parameters(),
+            lr=1e-3,
+            weight_decay=0.01,
+            betas=(0.9, 0.999),
+            eps=1e-8,
+        )
+
+tests/test_serialization.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def get_adamw_cls() -&gt; Any:
+        """
+        Returns a torch.optim.Optimizer that implements AdamW.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:471: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_roundtrip_empty" time="0.089"><failure message="NotImplementedError">def test_roundtrip_empty():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_empty_matches_tiktoken" time="4.354"><failure message="NotImplementedError">def test_empty_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:90: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_roundtrip_single_character" time="0.079"><failure message="NotImplementedError">def test_roundtrip_single_character():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_single_character_matches_tiktoken" time="0.081"><failure message="NotImplementedError">def test_single_character_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_roundtrip_single_unicode_character" time="0.079"><failure message="NotImplementedError">def test_roundtrip_single_unicode_character():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_single_unicode_character_matches_tiktoken" time="0.078"><failure message="NotImplementedError">def test_single_unicode_character_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_roundtrip_ascii_string" time="0.080"><failure message="NotImplementedError">def test_roundtrip_ascii_string():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:165: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_ascii_string_matches_tiktoken" time="0.080"><failure message="NotImplementedError">def test_ascii_string_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH, merges_path=MERGES_PATH, special_tokens=["&lt;|endoftext|&gt;"]
+        )
+
+tests/test_tokenizer.py:177: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = ['&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_roundtrip_unicode_string" time="0.072"><failure message="NotImplementedError">def test_roundtrip_unicode_string():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:194: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_unicode_string_matches_tiktoken" time="0.081"><failure message="NotImplementedError">def test_unicode_string_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH, merges_path=MERGES_PATH, special_tokens=["&lt;|endoftext|&gt;"]
+        )
+
+tests/test_tokenizer.py:206: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = ['&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_roundtrip_unicode_string_with_special_tokens" time="0.081"><failure message="NotImplementedError">def test_roundtrip_unicode_string_with_special_tokens():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH, merges_path=MERGES_PATH, special_tokens=["&lt;|endoftext|&gt;"]
+        )
+
+tests/test_tokenizer.py:220: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = ['&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_unicode_string_with_special_tokens_matches_tiktoken" time="0.080"><failure message="NotImplementedError">def test_unicode_string_with_special_tokens_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH, merges_path=MERGES_PATH, special_tokens=["&lt;|endoftext|&gt;"]
+        )
+
+tests/test_tokenizer.py:235: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = ['&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_overlapping_special_tokens" time="0.082"><failure message="NotImplementedError">def test_overlapping_special_tokens():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+            special_tokens=["&lt;|endoftext|&gt;", "&lt;|endoftext|&gt;&lt;|endoftext|&gt;"],
+        )
+
+tests/test_tokenizer.py:249: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...]
+special_tokens = ['&lt;|endoftext|&gt;', '&lt;|endoftext|&gt;&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_address_roundtrip" time="0.079"><failure message="NotImplementedError">def test_address_roundtrip():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:266: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_address_matches_tiktoken" time="0.079"><failure message="NotImplementedError">def test_address_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:279: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_german_roundtrip" time="0.078"><failure message="NotImplementedError">def test_german_roundtrip():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:295: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_german_matches_tiktoken" time="0.079"><failure message="NotImplementedError">def test_german_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:308: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_tinystories_sample_roundtrip" time="0.078"><failure message="NotImplementedError">def test_tinystories_sample_roundtrip():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:324: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_tinystories_matches_tiktoken" time="0.082"><failure message="NotImplementedError">def test_tinystories_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH, merges_path=MERGES_PATH, special_tokens=["&lt;|endoftext|&gt;"]
+        )
+
+tests/test_tokenizer.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = ['&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_encode_special_token_trailing_newlines" time="0.082"><failure message="NotImplementedError">def test_encode_special_token_trailing_newlines():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH, merges_path=MERGES_PATH, special_tokens=["&lt;|endoftext|&gt;"]
+        )
+
+tests/test_tokenizer.py:353: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = ['&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_encode_special_token_double_newline_non_whitespace" time="0.081"><failure message="NotImplementedError">def test_encode_special_token_double_newline_non_whitespace():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH, merges_path=MERGES_PATH, special_tokens=["&lt;|endoftext|&gt;"]
+        )
+
+tests/test_tokenizer.py:369: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = ['&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_encode_iterable_tinystories_sample_roundtrip" time="0.078"><failure message="NotImplementedError">def test_encode_iterable_tinystories_sample_roundtrip():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:384: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_encode_iterable_tinystories_matches_tiktoken" time="0.081"><failure message="NotImplementedError">def test_encode_iterable_tinystories_matches_tiktoken():
+        reference_tokenizer = tiktoken.get_encoding("gpt2")
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH, merges_path=MERGES_PATH, special_tokens=["&lt;|endoftext|&gt;"]
+        )
+
+tests/test_tokenizer.py:399: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = ['&lt;|endoftext|&gt;']
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_encode_iterable_memory_usage" time="0.078"><failure message="NotImplementedError">@pytest.mark.skipif(
+        not sys.platform.startswith("linux"),
+        reason="rlimit support for non-linux systems is spotty.",
+    )
+    def test_encode_iterable_memory_usage():
+&gt;       tokenizer = get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+        )
+
+tests/test_tokenizer.py:421: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_tokenizer.py:74: in get_tokenizer_from_vocab_merges_path
+    return get_tokenizer(vocab, merges, special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vocab = {0: b'!', 1: b'"', 2: b'#', 3: b'$', ...}, merges = [(b' ', b't'), (b' ', b'a'), (b'h', b'e'), (b'i', b'n'), (b'r', b'e'), (b'o', b'n'), ...], special_tokens = None
+
+    def get_tokenizer(
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -&gt; Any:
+        """Given a vocabulary, a list of merges, and a list of special tokens,
+        return a BPE tokenizer that uses the provided vocab, merges, and special tokens.
+    
+        Args:
+            vocab (dict[int, bytes]): The tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                to bytes (token bytes)
+            merges (list[tuple[bytes, bytes]]): BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                Merges are ordered by order of creation.
+            special_tokens (list[str] | None): A list of string special tokens for the tokenizer. These strings will never
+                be split into multiple tokens, and will always be kept as a single token.
+    
+        Returns:
+            A BPE tokenizer that uses the provided vocab, merges, and special tokens.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:562: NotImplementedError</failure></testcase><testcase classname="tests.test_tokenizer" name="test_encode_memory_usage" time="0.078"><skipped type="pytest.xfail" message="Tokenizer.encode is expected to take more memory than allotted (1MB)." /></testcase><testcase classname="tests.test_train_bpe" name="test_train_bpe_speed" time="0.000"><failure message="NotImplementedError">def test_train_bpe_speed():
+        """
+        Ensure that BPE training is relatively efficient by measuring training
+        time on this small dataset and throwing an error if it takes more than 1.5 seconds.
+        This is a pretty generous upper-bound, it takes 0.38 seconds with the
+        reference implementation on my laptop. In contrast, the toy implementation
+        takes around 3 seconds.
+        """
+        input_path = FIXTURES_PATH / "corpus.en"
+        start_time = time.time()
+&gt;       _, _ = run_train_bpe(
+            input_path=input_path,
+            vocab_size=500,
+            special_tokens=["&lt;|endoftext|&gt;"],
+        )
+
+tests/test_train_bpe.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input_path = PosixPath('/home/rj/WorkingOn/1-CS336/assignment1/tests/fixtures/corpus.en'), vocab_size = 500, special_tokens = ['&lt;|endoftext|&gt;'], kwargs = {}
+
+    def run_train_bpe(
+        input_path: str | os.PathLike,
+        vocab_size: int,
+        special_tokens: list[str],
+        **kwargs,
+    ) -&gt; tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+        """Given the path to an input corpus, run train a BPE tokenizer and
+        output its vocabulary and merges.
+    
+        Args:
+            input_path (str | os.PathLike): Path to BPE tokenizer training data.
+            vocab_size (int): Total number of items in the tokenizer's vocabulary (including special tokens).
+            special_tokens (list[str]): A list of string special tokens to be added to the tokenizer vocabulary.
+                These strings will never be split into multiple tokens, and will always be
+                kept as a single token. If these special tokens occur in the `input_path`,
+                they are treated as any other string.
+    
+        Returns:
+            tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+                vocab:
+                    The trained tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                    to bytes (token bytes)
+                merges:
+                    BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                    representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                    Merges are ordered by order of creation.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:592: NotImplementedError</failure></testcase><testcase classname="tests.test_train_bpe" name="test_train_bpe" time="0.000"><failure message="NotImplementedError">def test_train_bpe():
+        input_path = FIXTURES_PATH / "corpus.en"
+&gt;       vocab, merges = run_train_bpe(
+            input_path=input_path,
+            vocab_size=500,
+            special_tokens=["&lt;|endoftext|&gt;"],
+        )
+
+tests/test_train_bpe.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input_path = PosixPath('/home/rj/WorkingOn/1-CS336/assignment1/tests/fixtures/corpus.en'), vocab_size = 500, special_tokens = ['&lt;|endoftext|&gt;'], kwargs = {}
+
+    def run_train_bpe(
+        input_path: str | os.PathLike,
+        vocab_size: int,
+        special_tokens: list[str],
+        **kwargs,
+    ) -&gt; tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+        """Given the path to an input corpus, run train a BPE tokenizer and
+        output its vocabulary and merges.
+    
+        Args:
+            input_path (str | os.PathLike): Path to BPE tokenizer training data.
+            vocab_size (int): Total number of items in the tokenizer's vocabulary (including special tokens).
+            special_tokens (list[str]): A list of string special tokens to be added to the tokenizer vocabulary.
+                These strings will never be split into multiple tokens, and will always be
+                kept as a single token. If these special tokens occur in the `input_path`,
+                they are treated as any other string.
+    
+        Returns:
+            tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+                vocab:
+                    The trained tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                    to bytes (token bytes)
+                merges:
+                    BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                    representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                    Merges are ordered by order of creation.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:592: NotImplementedError</failure></testcase><testcase classname="tests.test_train_bpe" name="test_train_bpe_special_tokens" time="0.000"><failure message="NotImplementedError">snapshot = &lt;tests.conftest.Snapshot object at 0x79fad361ee10&gt;
+
+    def test_train_bpe_special_tokens(snapshot):
+        """
+        Ensure that the special tokens are added to the vocabulary and not
+        merged with other tokens.
+        """
+        input_path = FIXTURES_PATH / "tinystories_sample_5M.txt"
+&gt;       vocab, merges = run_train_bpe(
+            input_path=input_path,
+            vocab_size=1000,
+            special_tokens=["&lt;|endoftext|&gt;"],
+        )
+
+tests/test_train_bpe.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input_path = PosixPath('/home/rj/WorkingOn/1-CS336/assignment1/tests/fixtures/tinystories_sample_5M.txt'), vocab_size = 1000, special_tokens = ['&lt;|endoftext|&gt;'], kwargs = {}
+
+    def run_train_bpe(
+        input_path: str | os.PathLike,
+        vocab_size: int,
+        special_tokens: list[str],
+        **kwargs,
+    ) -&gt; tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+        """Given the path to an input corpus, run train a BPE tokenizer and
+        output its vocabulary and merges.
+    
+        Args:
+            input_path (str | os.PathLike): Path to BPE tokenizer training data.
+            vocab_size (int): Total number of items in the tokenizer's vocabulary (including special tokens).
+            special_tokens (list[str]): A list of string special tokens to be added to the tokenizer vocabulary.
+                These strings will never be split into multiple tokens, and will always be
+                kept as a single token. If these special tokens occur in the `input_path`,
+                they are treated as any other string.
+    
+        Returns:
+            tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+                vocab:
+                    The trained tokenizer vocabulary, a mapping from int (token ID in the vocabulary)
+                    to bytes (token bytes)
+                merges:
+                    BPE merges. Each list item is a tuple of bytes (&lt;token1&gt;, &lt;token2&gt;),
+                    representing that &lt;token1&gt; was merged with &lt;token2&gt;.
+                    Merges are ordered by order of creation.
+        """
+&gt;       raise NotImplementedError
+E       NotImplementedError
+
+tests/adapters.py:592: NotImplementedError</failure></testcase></testsuite></testsuites>
