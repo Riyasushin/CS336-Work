@@ -1,0 +1,18 @@
+ysBubble_a:
+# data rdi; count rsi
+  jmp L2
+L4:
+  mrmovq 8(%rax), %r9 
+  mrmovq (%rax), %r10
+  rrmovq %r9, %r8
+  subq %r10, %r8
+
+    
+
+  irmovq $8, %r8
+  subq %r8, %rsi
+L2:
+  rrmovq %rsi, %r8
+  subq %rdi, %r8
+  jg L6
+ ret
