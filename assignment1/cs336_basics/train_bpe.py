@@ -296,7 +296,7 @@ def process_chunk(args: tuple[str, list[str], bool]) -> list[list[bytes]]:
 def main():
     start_time = time.time()
     vocab, merges = train_bpe(
-        input_path='/root/autodl-tmp/data/TinyStoriesV2-GPT4-train.txt',
+        input_path='/data/CS336-use/TinyStoriesV2-GPT4-valid.txt',
         # input_path='/home/rj/WorkingOn/1-CS336/assignment1/cs336_basics/in.txt',
         vocab_size=10000,
         special_tokens=["<|endoftext|>"],
@@ -307,7 +307,7 @@ def main():
     print(f"Training completed in {(end_time - start_time):.2f} seconds.")
     print(f"Vocab size: {len(vocab)}")
     print(f"Longest token: {max(vocab.values(), key=len)} (length={len(max(vocab.values(), key=len))})")
-    Tokenizer.save_bpe_model(vocab, merges, "bpe_on_TinyStories_train")
+    Tokenizer.save_bpe_model(vocab, merges, "bpe_on_TinyStories_valid")
 
 if __name__ == "__main__":
     main()
