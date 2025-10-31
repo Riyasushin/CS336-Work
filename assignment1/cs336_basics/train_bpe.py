@@ -7,14 +7,172 @@ import time         # 用于计时
 import multiprocessing as mp
 import argparse
 
+from typing import Iterable, Iterator
+
 CHUNK_SIZE = 1024 *  50
 N_BYTES = 256
 
 Test_pretokenize_and_count_mp = False
 
 class BPE_Tokenizer:
-    def train(self, input_path: str, vocab_size: int, special_tokens: list[str], num_counter: int, num_merger: int, do_monitor: bool):
+    
+    
+    def __init__(self, vocab: dict[int, bytes] = {}, merges: list[tuple[bytes, bytes]] = [], special_tokens: list[str] | None = ["<|endoftext|>"]):
+        self.vocab = vocab
+        self.vocab_reversed = {v: k for k, v in self.vocab.items()}  # bytes: int
+        self.merges = merges
+        self.merge_ranks = {pair: i for i, pair in enumerate(merges)} # 越小越先合并
+        self.special_tokens = sorted(special_tokens, key=len, reverse=True) if special_tokens is not None else special_tokens
+    
+    @classmethod
+    def from_file(cls, name: str, special_tokens: list[str] = ["<|endoftext|>"]):
+        vocab, merges = BPE_Tokenizer.load_bpe_model(name)
+        return cls(vocab, merges, special_tokens)
+    
+    def encode(self, text: str) -> list[int]:
+        '''
+        special tokens 不参加encode
+        '''
+        token_ids = []
+        
+        # pre-tokenize the text to chunks, handling special tokens.
+        for tokens in BPE_Tokenizer._get_pre_tokenize_list_iter(text, self.special_tokens):
+            # merge and work
+            if len(tokens) == 1 and tokens[0] in self.vocab_reversed:
+                token_id = self.vocab_reversed.get(tokens[0])
+                if token_id is not None:
+                    token_ids.append(token_id)
+                    continue
+            while len(tokens) >= 2:
+                # 找到pair中rank最小的那个（先合并它）
+                # 如果 pair 不在 merge 规则里， 返回 inf
+                best_pair = min(zip(tokens, tokens[1:]), key=lambda p: self.merge_ranks.get(p, float('inf')))
+                # If the best pair is not in our merge rules, no more merges are possible.
+                if best_pair not in self.merge_ranks:
+                    break
+
+                # Merge the best pair into a new token
+                new_tok = best_pair[0] + best_pair[1]
+                tokens = BPE_Tokenizer._merge_a_pair_for_encode(tokens, best_pair, new_tok)
+                
+            # Convert the final merged tokens to their corresponding IDs
+            for token in tokens:
+                token_id = self.vocab_reversed.get(token)
+                if token_id is not None:
+                    token_ids.append(token_id)
+                    # XXX 其实不会识别错误吧
+        return token_ids
+    
+    @staticmethod
+    def _merge_a_pair_for_encode(tokens:list[bytes], pair: tuple[bytes, bytes], new_tok:bytes)->list[bytes]:
+        i = 0
+        new_token_bytes = []
+        while i < len(tokens):
+            if i < len(tokens) - 1 and (tokens[i], tokens[i+1]) == pair:
+                new_token_bytes.append(new_tok)
+                i += 2
+            else:
+                new_token_bytes.append(tokens[i])
+                i += 1
+        return new_token_bytes
+        
+    def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
+        for line in iterable:
+            # token_ids = self.encode(line)
+            # yield from token_ids
+            # 流式 pre-tokenize，每次只返回一个 token 子列表
+            for tokens in BPE_Tokenizer._get_pre_tokenize_list_iter(line, self.special_tokens):
+                # 直接 merge 并 yield token_ids
+                while len(tokens) >= 2:
+                    best_pair = min(zip(tokens, tokens[1:]), key=lambda p: self.merge_ranks.get(p, float('inf')))
+                    if best_pair not in self.merge_ranks:
+                        break
+                    new_tok = best_pair[0] + best_pair[1]
+                    tokens = BPE_Tokenizer._merge_a_pair_for_encode(tokens, best_pair, new_tok)
+
+                for token in tokens:
+                    token_id = self.vocab_reversed.get(token)
+                    if token_id is not None:
+                        yield token_id
+       
+    @staticmethod
+    def _get_pre_tokenize_list_iter(text: str, special_tokens: list[str]| None) -> Iterator[list[bytes]]:
+        PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+        def yield_normal_tokens(segment: str) -> Iterator[list[bytes]]:
+            """把普通文本按 PAT 分词，并拆成字节 yield"""
+            for match in re.finditer(PAT, segment):
+                token = match.group(0).encode("utf-8")
+                yield [bytes([b]) for b in token]
+
+        if not special_tokens:
+            yield from yield_normal_tokens(text)
+            return
+
+        # special token 从长到短排序，防止重叠 token 被拆开
+        special_tokens_sorted = sorted(special_tokens, key=len, reverse=True)
+        special_pattern = '(' + '|'.join(re.escape(tok) for tok in special_tokens_sorted) + ')'
+
+        for segment in re.split(special_pattern, text):
+            if not segment:
+                continue
+            if segment in special_tokens:
+                yield [segment.encode("utf-8")]
+            else:
+                yield from yield_normal_tokens(segment)
+
+    @staticmethod
+    def _get_pre_tokenize_list(text: str, special_tokens: list[str] | None) -> list[list[bytes]]:
+        '''
+        把输入的字符串pre-tokenize然后返回顺序的list[list[bytes]]
+        保留special token
+        '''
+        result = []
+        
+        pattern = re.compile(r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
+        # 保留special tokens，需要用捕获组 `()`
+        if special_tokens is None:
+            blocks = [text]
+        else:
+            special_pattern_save_specials = '(' + "|".join(re.escape(token) for token in special_tokens) + ')'
+            blocks = re.split(special_pattern_save_specials, text)  # 按特殊符号分割文本
+        for block in blocks:
+            if not block:
+                continue
+            if special_tokens is not None and block in special_tokens:
+                result.append([block.encode("utf-8")])
+            else:
+                
+                for match in re.finditer(pattern, block):
+                    # text_b = b'你'
+                    # token_bytes = [b'\xe4', b'\xbd', b'\xa0']
+                    # ------
+                    # token_b = b'Hello'
+                    # token_bytes = [b'H', b'e', b'l', b'l', b'o']
+                    text = match.group(0)
+                    text_b = text.encode("utf-8")
+                    token_bytes = [bytes([b]) for b in text_b]
+                    result.append(token_bytes)
+        return result        
+        
+    
+    def decode(self, ids: list[int]) -> str:
+        '''
+        把输入的token_ids([int])根据vocab的出对应的真实字符结果
+        '''
+        tokens = []
+        for token_id in ids:
+            token_bytes = self.vocab.get(token_id, b'\xef\xbf\xbd') # 若不存在则用 � 的 UTF-8 编码（替换字符）
+            tokens.append(token_bytes)
+        full_bytes = b"".join(tokens)
+        return full_bytes.decode(encoding='utf-8', errors='replace') # errors='replace' 用 � 替换错误部分
+    
+    ################################################################
+    #     Train 过程中用的函数
+    ################################################################
+    def train(self, input_path: str | os.PathLike, vocab_size: int, special_tokens: list[str], num_counter: int, num_merger: int, do_monitor: bool):
         st = time.perf_counter()
+        # special_tokens 要按照长度降序排列，不然special tokens overlap 了
+        special_tokens = sorted(special_tokens, key=len, reverse=True)
         word_counts = self._pretokenize_and_count_mp(input_path, special_tokens, num_counter, num_merger, do_monitor)
         ed = time.perf_counter()
         print(f'_pretokenize_and_count takes: {ed - st}')
@@ -128,7 +286,7 @@ class BPE_Tokenizer:
         return pair_counts
 
 
-    def _pretokenize_and_count(self, input_path: str, special_tokens: list[str]):
+    def _pretokenize_and_count(self, input_path: str, special_tokens: list[str], keep_special_tokens: bool = False) -> dict[str, int]:
         pattern = re.compile(r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
         special_pattern = "|".join(re.escape(token) for token in special_tokens) # TODO ?????
         word_counts = defaultdict(int)
@@ -142,7 +300,7 @@ class BPE_Tokenizer:
         
         return word_counts
     
-    def _pretokenize_and_count_mp(self, input_path: str, special_tokens: list[str], num_counter: int, num_merger: int, do_monitor: bool):
+    def _pretokenize_and_count_mp(self, input_path: str | os.PathLike, special_tokens: list[str], num_counter: int, num_merger: int, do_monitor: bool, keep_special_tokens: bool = False):
         pattern = re.compile(r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
         special_pattern = "|".join(re.escape(token) for token in special_tokens)
         
@@ -216,7 +374,6 @@ class BPE_Tokenizer:
         
         return word_counts  
         
-        
     
     @staticmethod
     def _queue_moniter_process(chunk_queue, counter_queue, merged_queue, stop_event):
@@ -257,9 +414,9 @@ class BPE_Tokenizer:
             
     
     @staticmethod
-    def _chunk_documents_streaming(path: str, chunk_size: int = CHUNK_SIZE, special_token: str = "<|endoftext|>"):
+    def _chunk_documents_streaming(path: str | os.PathLike, chunk_size: int = CHUNK_SIZE, special_token: str = "<|endoftext|>"):
         '''
-        流式读取大文件，并将文件内容分割成以特定特殊标记（默认是 <|endoftext|>)为边界的文本块(chunk)
+        流式读取大文件，并将文件内容分割成以特定特殊标记（默认是 <|endoftext|>)为边界的文本块(chunk), 带特殊token
         '''
         leftover = ""
         token_len = len(special_token)
@@ -305,33 +462,78 @@ class BPE_Tokenizer:
                 f.write(f"{a.decode('utf-8', errors='replace')} {b.decode('utf-8', errors='replace')}\n")
     
     @staticmethod
-    def load_bpe_model(name: str):
+    def load_bpe_model(name: str) ->  tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+        """
+        Load model saved by save_bpe_model(output_dir).
+        - vocab.json is expected to be either:
+            * a dict mapping str(id) -> token_string
+            * a list where index -> token_string
+          In both cases token_string was written using .decode('utf-8', errors='replace'),
+          so we re-encode with utf-8 to obtain bytes.
+        - merges.txt is expected to contain one merge per line in the form:
+            <token_a_string><space><token_b_string>
+          We split on the first space (tokens may include leading spaces).
+        Returns (vocab: dict[int, bytes], merges: list[tuple[bytes, bytes]])
+        """
         if not name:
             raise ValueError("name must be a non-empty directory")
         vocab_path = os.path.join(name, "vocab.json")
         merges_path = os.path.join(name, "merges.txt")
+
+        if not os.path.exists(vocab_path):
+            raise FileNotFoundError(f"vocab file not found: {vocab_path}")
+        if not os.path.exists(merges_path):
+            raise FileNotFoundError(f"merges file not found: {merges_path}")
+
         try:
-            vocab: dict[int, bytes] = {}
+            # load vocab (support dict or list formats)
             with open(vocab_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    id_str, token_str = line.strip().split("\t")
-                    vocab[int(id_str)] = token_str.encode("utf-8")  # 存为 bytes
-            
+                vocab_data = json.load(f)
+
+            vocab: dict[int, bytes] = {}
+            if isinstance(vocab_data, dict):
+                for k_str, token_str in vocab_data.items():
+                    try:
+                        idx = int(k_str)
+                    except Exception as e:
+                        raise ValueError(f"Invalid vocab key (expected int string): {k_str}") from e
+                    if not isinstance(token_str, str):
+                        raise ValueError(f"Invalid vocab value for id {k_str}: expected string")
+                    vocab[idx] = token_str.encode("utf-8")
+            elif isinstance(vocab_data, list):
+                for idx, token_str in enumerate(vocab_data):
+                    if not isinstance(token_str, str):
+                        raise ValueError(f"Invalid vocab list element at index {idx}: expected string")
+                    vocab[idx] = token_str.encode("utf-8")
+            else:
+                raise ValueError("vocab.json must be a dict or a list")
+
+            # load merges (split on first space to allow tokens with internal spaces)
             merges: list[tuple[bytes, bytes]] = []
             with open(merges_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    parts = line.strip().split()
-                    if len(parts) == 2:
-                        merges.append((parts[0].encode("utf-8"), parts[1].encode("utf-8")))
-                return vocab, merges
+                for lineno, raw in enumerate(f, start=1):
+                    line = raw.rstrip("\n")
+                    if not line:
+                        continue
+                    # split on first space only
+                    parts = line.split(" ", 1)
+                    if len(parts) != 2:
+                        raise ValueError(f"Invalid merges line {lineno}: expected two tokens separated by space")
+                    a_str, b_str = parts
+                    merges.append((a_str.encode("utf-8"), b_str.encode("utf-8")))
+
+            return vocab, merges
+
+        except json.JSONDecodeError as e:
+            raise IOError(f"Invalid JSON in vocab file {vocab_path}: {e}") from e
         except Exception as e:
             raise IOError(f"Failed to load BPE model from {name}: {e}") from e
     
     
 
-def train_bpe(input_path: str, vocab_size: int, special_tokens: list[str]):
+def train_bpe(input_path: str | os.PathLike, vocab_size: int, special_tokens: list[str]):
     trainer = BPE_Tokenizer()
-    return trainer.train(input_path, vocab_size, special_tokens, num_counter=16, num_merger=4, do_monitor=True)
+    return trainer.train(input_path, vocab_size, special_tokens, num_counter=16, num_merger=4, do_monitor=False)
 
 def main():
     
@@ -347,7 +549,7 @@ def main():
 
     start_time = time.time()
     vocab, merges = train_bpe(
-        input_path='/data/CS336-use/TinyStoriesV2-GPT4-train.txt',
+        input_path='/data/CS336-use/owt_train.txt',
         # input_path='/home/rj/WorkingOn/1-CS336/assignment1/cs336_basics/in.txt',
         vocab_size=10000,
         special_tokens=["<|endoftext|>"],
@@ -357,7 +559,7 @@ def main():
     print(f"Training completed in {(end_time - start_time):.2f} seconds.")
     print(f"Vocab size: {len(vocab)}")
     print(f"Longest token: {max(vocab.values(), key=len)} (length={len(max(vocab.values(), key=len))})")
-    BPE_Tokenizer.save_bpe_model(vocab, merges, "bpe_on_TinyStories_train")
+    BPE_Tokenizer.save_bpe_model(vocab, merges, "bpe_on_OpenWebText_train")
 
 if __name__ == "__main__":
     main()
