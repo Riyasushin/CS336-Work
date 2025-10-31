@@ -124,8 +124,6 @@ def run_swiglu(
     swiGLU.eval()
     return swiGLU(in_features)
     
-
-
 def run_scaled_dot_product_attention(
     Q: Float[Tensor, " ... queries d_k"],
     K: Float[Tensor, " ... keys d_k"],
@@ -206,8 +204,6 @@ def run_multihead_self_attention(
     output = mha(in_features, None)
     return output
     
-
-
 def run_multihead_self_attention_with_rope(
     d_model: int,
     num_heads: int,
@@ -277,7 +273,6 @@ def run_multihead_self_attention_with_rope(
     output = mha(in_features, token_positions)
     return output
 
-
 def run_rope(
     d_k: int,
     theta: float,
@@ -299,7 +294,6 @@ def run_rope(
     """
     rope = RJRoPE(theta=theta, d_k=d_k, max_seq_len=max_seq_len)
     return rope(in_query_or_key, token_positions)
-
 
 def run_transformer_block(
     d_model: int,
@@ -371,9 +365,39 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    raise NotImplementedError
-
-
+    block = RJTransformerBlock(d_model=d_model, num_heads=num_heads, d_ff=d_ff, theta=theta, max_seq_len=max_seq_len)
+    block.eval()
+    
+    # 2. 准备权重映射
+    # 注意：权重字典的键与测试中提供的格式匹配
+    weights_mapping = {
+        # attention 相关权重
+        'mha.q_proj.weight': weights['attn.q_proj.weight'],
+        'mha.k_proj.weight': weights['attn.k_proj.weight'], 
+        'mha.v_proj.weight': weights['attn.v_proj.weight'],
+        'mha.output_proj.weight': weights['attn.output_proj.weight'],
+        # norm 层权重
+        'rms_norm_mha.g': weights['ln1.weight'],
+        'rms_norm_ffn.g': weights['ln2.weight'],
+        # FFN 权重
+        'ffn.W1': weights['ffn.w1.weight'],
+        'ffn.W2': weights['ffn.w2.weight'],
+        'ffn.W3': weights['ffn.w3.weight']
+    }
+    
+    # 3. 用提供的权重更新模块参数
+    with torch.no_grad():
+        for name, weight in weights_mapping.items():
+            # 获取目标参数
+            param = block.get_parameter(name)
+            # 确保形状匹配（必要时进行转置）
+            if weight.shape != param.shape and weight.T.shape == param.shape:
+                weight = weight.T
+            # 复制权重
+            param.copy_(weight)
+    
+    return block(in_features, None)
+    
 def run_transformer_lm(
     vocab_size: int,
     context_length: int,
@@ -450,11 +474,48 @@ def run_transformer_lm(
             `sequence_length` is at most `context_length`.
 
     Returns:
-        Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
+        Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized 注意是 `un`normalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
+    lm = RJTransformerLM(vocab_size=vocab_size, context_length=context_length, num_layers=num_layers, num_heads=num_heads, d_ff=d_ff, d_model=d_model, rope_theta=rope_theta)
+    lm.eval()
+    
+    def load_weights_mapping(weights_mapping):
+        with torch.no_grad():
+            for name, weight in weights_mapping.items():
+                # 获取目标参数
+                param = lm.get_parameter(name)
+                # 确保形状匹配（必要时进行转置）
+                if weight.shape != param.shape and weight.T.shape == param.shape:
+                    weight = weight.T
+                # 复制权重
+                param.copy_(weight)
 
+    outer_weights_mapping = {
+        'token_embedding.weight': weights['token_embeddings.weight'],
+        'norm.g': weights['ln_final.weight'], 
+        'output_embedding.weight': weights['lm_head.weight'],
+    }
+    load_weights_mapping(weights_mapping=outer_weights_mapping)
+    
+    for i in range(num_layers):
+        profix = f'blocks.{i}.'
+        block_weight_mapping = {
+            profix + 'mha.q_proj.weight': weights[f'layers.{i}.attn.q_proj.weight'],
+            profix + 'mha.k_proj.weight': weights[f'layers.{i}.attn.k_proj.weight'], 
+            profix + 'mha.v_proj.weight': weights[f'layers.{i}.attn.v_proj.weight'],
+            profix + 'mha.output_proj.weight': weights[f'layers.{i}.attn.output_proj.weight'],
+            # norm 层权重
+            profix + 'rms_norm_mha.g': weights[f'layers.{i}.ln1.weight'],
+            profix + 'rms_norm_ffn.g': weights[f'layers.{i}.ln2.weight'],
+            # FFN 权重
+            profix + 'ffn.W1': weights[f'layers.{i}.ffn.w1.weight'],
+            profix + 'ffn.W2': weights[f'layers.{i}.ffn.w2.weight'],
+            profix + 'ffn.W3': weights[f'layers.{i}.ffn.w3.weight']
+        }
+        load_weights_mapping(weights_mapping=block_weight_mapping)
+        
+    return lm(in_indices)
 
 def run_rmsnorm(
     d_model: int,
@@ -483,8 +544,6 @@ def run_rmsnorm(
     rms.load_state_dict(state_dict)
     return rms(in_features)
 
-
-
 def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
     """Given a tensor of inputs, return the output of applying SiLU
     to each element.
@@ -497,7 +556,6 @@ def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
         SiLU to each element.
     """
     return silu(in_features)
-
 
 def run_get_batch(
     dataset: npt.NDArray, batch_size: int, context_length: int, device: str

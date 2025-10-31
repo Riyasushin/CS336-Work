@@ -297,7 +297,6 @@ def scaled_dot_product_attention( Q: torch.Tensor, K: torch.Tensor, V: torch.Ten
     output = einsum(attention_weights, V, '... queries k, ... k d_v -> ... queries d_v')
     return output
     
-
 class RJCausalMultiHeadSelfAttention(nn.Module):
     """
     Given the key, query, and value projection weights of a naive unbatched
@@ -396,8 +395,64 @@ class RJCausalMultiHeadSelfAttention(nn.Module):
         output = self.output_proj(attn_output)
         return output
 
+class RJTransformerBlock(nn.Module):
+    def __init__(self, d_model: int, num_heads: int, d_ff: int, theta: float, max_seq_len: int,device: torch.device | None = None, dtype: torch.dtype|None = None):
+        super().__init__()
+        self.d_model = d_model
+        self.num_heads = num_heads
+        assert d_model % num_heads == 0, "d_model % num_heads should be 0"
+        self.d_k = d_model // num_heads
+        self.d_ff = d_ff
+        self.device = device
+        self.dtype = dtype
+        self.max_seq_len = max_seq_len
+        kwargs = {'device': device, 'dtype': dtype}
+
+        # 两个 RMS 是不同的！
+        self.rms_norm_mha = RJRMSnorm(d_model=self.d_model, device=self.device, dtype=self.dtype)
+        self.rms_norm_ffn = RJRMSnorm(d_model=self.d_model, device=self.device, dtype=self.dtype)
+        self.rope = RJRoPE(theta=theta, d_k=self.d_k, max_seq_len=self.max_seq_len, device=self.device)
+        self.mha = RJCausalMultiHeadSelfAttention(d_model=self.d_model, num_heads=self.num_heads, positional_encoder=self.rope, **kwargs)
         
-   
+        self.ffn = RJSwiGLU(d_model=self.d_model, d_ff=self.d_ff, **kwargs)
+        
+    def forward(self, in_features: torch.Tensor, token_positions: torch.Tensor):
+        s1 = in_features + self.mha(self.rms_norm_mha(in_features), token_positions)
+        s2 = self.ffn(self.rms_norm_ffn(s1)) + s1
+        return s2
+        
+class RJTransformerLM(nn.Module):
+    def __init__(self, vocab_size: int, context_length:int, num_layers: int, num_heads:int,d_ff: int, d_model:int, rope_theta: float, device: torch.device | None = None, dtype: torch.dtype|None = None) -> None:
+        super().__init__()
+        kwargs = {"device": device, "dtype": dtype}
+        self.token_embedding = RJEmbedding(num_embeddings=vocab_size, embedding_dim=d_model, **kwargs)
+        assert d_model % num_heads == 0, "d_model % num_heads should be 0" 
+        self.rope = RJRoPE(theta=rope_theta, d_k=(d_model // num_heads), max_seq_len=context_length, device=device)
+        
+        self.blocks = nn.ModuleList([
+            RJTransformerBlock(
+                d_model=d_model,
+                num_heads=num_heads,
+                d_ff=d_ff,
+                theta=rope_theta,
+                max_seq_len=context_length,
+                **kwargs
+            ) for _ in range(num_layers)
+        ])
+        
+        self.norm = RJRMSnorm(d_model=d_model, device=device, dtype=dtype)
+        
+        self.output_embedding = RJLinear(in_features=d_model, out_features=vocab_size)
+    
+    def forward(self, token_ids: torch.Tensor):
+        x = self.token_embedding(token_ids)
+        
+        for block in self.blocks:
+            x = block(x, None) # positions ?
+        
+        x = self.norm(x)
+        logits = self.output_embedding(x)
+        return logits
 
         
         
