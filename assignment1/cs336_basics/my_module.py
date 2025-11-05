@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import math
 from einops import rearrange, repeat, einsum
+from cs336_basics.my_utils import softmax
 
 class RJLinear(nn.Module):
     
@@ -242,26 +243,12 @@ class RJRoPE(nn.Module):
         
         result = rearrange(rotated_pairs, '... s p c -> ... s (p c)')
         return result
-        
-        
-     
 
 def silu(in_features: torch.Tensor) -> torch.Tensor:
     if in_features.dtype not in {torch.float, torch.float32, torch.float16, torch.float64}:
         raise ValueError(f"[SiLU] Tokens is at type: {in_features.dtype}")
     return in_features * torch.sigmoid(in_features)
 
-def softmax(in_features: torch.Tensor, dim: int):
-    '''
-    Given a tensor of inputs, return the output of softmaxing the given `dim` of the input
-    '''
-    # 调用张量的.max(dim=..., keepdim=...)方法时，返回的是一个元组  (最大值, 索引)
-    max_val = in_features.max(dim=dim, keepdim=True).values
-    in_features =  in_features - max_val
-    exp_x = torch.exp(in_features)
-    sum_exp = exp_x.sum(dim=dim, keepdim=True)
-    return exp_x / sum_exp
-    
 def scaled_dot_product_attention( Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
     '''
      Given key (K), query (Q), and value (V) tensors, return
