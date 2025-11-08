@@ -80,9 +80,13 @@ def main(args):
     
         # Get batch
         inputs, targets = data_loading(train_data, batch_size=args.batch_size, context_length=args.context_length, device=device)
-    
+        # print(inputs.shape)
+        # print(targets.shape)
         # forward
-        logits = model(inputs)
+        logits = model(inputs) # logits.shape = (B, T, V)
+        # print(logits.shape)
+        logits = rearrange(logits, 'b t v -> (b t) v')
+        targets = rearrange(targets, 'b t -> (b t)')
         loss = cross_entropy(logits, targets)
     
         # backward
@@ -109,12 +113,14 @@ def main(args):
             val_inputs, val_targets = data_loading(val_data, batch_size=args.batch_size, context_length=args.context_length, device=device)
             with torch.no_grad():
                 val_logits = model(val_inputs)
+                val_logits = rearrange(val_logits, 'b t v -> (b t) v')
+                val_targets = rearrange(val_targets, 'b t -> (b t)')
                 val_loss = cross_entropy(val_logits, val_targets)
             print(f"Iteration {iteration}, Validation Loss: {val_loss.item():.4f}")
             model.train()
     
         # Save checkpoint
-        if iteration % args.log_interval == 0:
+        if iteration % args.checkpoint_interval == 0:
             checkpoint_file = os.path.join(args.checkpoint_path, f"model_checkpoint_{iteration}.pt")
             save_checkpoint(model, optimizer, iteration, checkpoint_file, loss=loss.item())
             if best_loss > loss:
@@ -157,7 +163,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--max_grad_norm", type=float, default=2.0, help="Maximum gradient norm for clipping.")
     
-    parser.add_argument("--log_interval", type=int, default=100, help="Log interval.")
+    parser.add_argument("--log_interval", type=int, default=10, help="Log interval.")
     parser.add_argument("--val_interval", type=int, default=1000, help="Validation interval.")
     
     parser.add_argument("--checkpoint_interval", type=int, default=1000, help="Checkpoint save interval.")

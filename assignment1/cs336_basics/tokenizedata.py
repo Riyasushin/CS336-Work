@@ -16,3 +16,6 @@ if __name__ == "__main__":
     tokenizer = BPE_Tokenizer.from_file(args.tokenizer_folder, args.special_tokens)
     tokenizer.encode_to_npfile(args.input, args.output)
     
+'''
+uv run --input /root/autodl-tmp/TinyStoriesV2-GPT4-train.txt --output npy_data/train.npy 
+''' 

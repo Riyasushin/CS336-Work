@@ -46,8 +46,12 @@ def data_loading(
     
     # 使用 torch.from_numpy 避免额外拷贝（比 torch.tensor 快）
     # 注意：memmap 也可以直接转为 tensor，不需要额外载入内存
-    x_tensor = torch.from_numpy(x_batch).to(device=device, dtype=torch.long)
-    y_tensor = torch.from_numpy(y_batch).to(device=device, dtype=torch.long)
+    # x_tensor = torch.from_numpy(x_batch).to(device=device, dtype=torch.long)
+    # y_tensor = torch.from_numpy(y_batch).to(device=device, dtype=torch.long)
+    # 若 dataset 是 np.memmap 类型，可能出现 pinned memory 问题（尤其在 cuda 时）,为了兼容性、安全性，建议改成：
+    x_tensor = torch.as_tensor(x_batch, device=device, dtype=torch.long)
+    y_tensor = torch.as_tensor(y_batch, device=device, dtype=torch.long)
+
     return x_tensor, y_tensor
     
     

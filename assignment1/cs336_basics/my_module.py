@@ -430,7 +430,11 @@ class RJTransformerLM(nn.Module):
         
         self.norm = RJRMSnorm(d_model=d_model, device=device, dtype=dtype)
         
-        self.output_embedding = RJLinear(in_features=d_model, out_features=vocab_size)
+        self.output_embedding = RJLinear(in_features=d_model, out_features=vocab_size, **kwargs)
+        
+        for name, param in self.named_parameters():
+            assert param.device == device, f"[Device Mismatch] Parameter {name} is on {param.device}, expected {device}"
+
     
     def forward(self, token_ids: torch.Tensor):
         x = self.token_embedding(token_ids)

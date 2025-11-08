@@ -620,7 +620,7 @@ def main():
 
     start_time = time.time()
     vocab, merges = train_bpe(
-        input_path='/data/CS336-use/TinyStoriesV2-GPT4-train.txt',
+        input_path='/root/autodl-tmp/TinyStoriesV2-GPT4-train.txt',
         # input_path='/home/rj/WorkingOn/1-CS336/assignment1/cs336_basics/in.txt',
         vocab_size=10000,
         special_tokens=["<|endoftext|>"],

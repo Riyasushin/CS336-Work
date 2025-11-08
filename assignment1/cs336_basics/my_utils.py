@@ -95,6 +95,7 @@ def save_checkpoint(
     }
     if loss is not None:
         checkpoint['loss'] = loss
+    os.makedirs(os.path.dirname(out), exist_ok=True)
     torch.save(checkpoint, out)
 
 
