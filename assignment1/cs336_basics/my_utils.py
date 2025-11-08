@@ -1,6 +1,7 @@
 import torch
 from typing import IO, Any, BinaryIO
 import os
+from pathlib import Path
 
 def softmax(in_features: torch.Tensor, dim: int):
     '''
@@ -21,11 +22,32 @@ torch.save (obj, dest) can dump an object
 torch.load(src)
 '''
 
+
+from typing import overload, Union, Literal
+# Literal[True] 和 Literal[False] 是 布尔常量类型，
+# 类型检查器知道它们 不会互相重叠。
+@overload
 def load_checkpoint(
     src: str | os.PathLike | BinaryIO | IO[bytes],
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
+    has_loss: Literal[False] = False,
 ) -> int:
+    ...  # 重载仅定义类型，无实际实现
+@overload
+def load_checkpoint(
+    src: str | os.PathLike | BinaryIO | IO[bytes],
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    has_loss: Literal[True],
+) -> tuple[int, float]:
+    ...  # 重载仅定义类型，无实际实现
+def load_checkpoint(
+    src: str | os.PathLike | BinaryIO | IO[bytes],
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    has_loss: bool = False
+) -> Union[int , tuple[int, float]]:
     """
     Given a serialized checkpoint (path or file-like object), restore the
     serialized state to the given model and optimizer.
@@ -43,13 +65,18 @@ def load_checkpoint(
     model.load_state_dict(checkpoint['model'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     iter: int = checkpoint['iter']
-    return iter
+    if has_loss:
+        loss = checkpoint['loss']
+        return iter, loss
+    else:
+        return iter
 
 def save_checkpoint(
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     iteration: int,
     out: str | os.PathLike | BinaryIO | IO[bytes],
+    loss : None | float = None,
 ):
     """
     Given a model, optimizer, and an iteration number, serialize them to disk.
@@ -66,6 +93,8 @@ def save_checkpoint(
         "optimizer": optimizer.state_dict(),
         "iter": iteration,
     }
+    if loss is not None:
+        checkpoint['loss'] = loss
     torch.save(checkpoint, out)
 
 

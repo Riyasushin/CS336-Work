@@ -5,7 +5,7 @@ import torch
 
 
 def data_loading(
-    dataset: npt.NDArray, batch_size: int, context_length: int, device: str
+    dataset: npt.NDArray, batch_size: int, context_length: int, device: str | torch.device
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Given a dataset (a 1D numpy array of integers) and a desired batch size and

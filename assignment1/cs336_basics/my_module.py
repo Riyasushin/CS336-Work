@@ -398,6 +398,7 @@ class RJTransformerBlock(nn.Module):
         # 两个 RMS 是不同的！
         self.rms_norm_mha = RJRMSnorm(d_model=self.d_model, device=self.device, dtype=self.dtype)
         self.rms_norm_ffn = RJRMSnorm(d_model=self.d_model, device=self.device, dtype=self.dtype)
+        # TODO 这里实现不是很好，因为可用复用同一个的
         self.rope = RJRoPE(theta=theta, d_k=self.d_k, max_seq_len=self.max_seq_len, device=self.device)
         self.mha = RJCausalMultiHeadSelfAttention(d_model=self.d_model, num_heads=self.num_heads, positional_encoder=self.rope, **kwargs)
         

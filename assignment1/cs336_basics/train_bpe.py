@@ -6,6 +6,10 @@ from collections import defaultdict  # 用于统计计数，自动初始化字�
 import time         # 用于计时
 import multiprocessing as mp
 import argparse
+import tempfile
+import numpy as np
+from concurrent.futures import ProcessPoolExecutor
+from tqdm import tqdm
 
 from typing import Iterable, Iterator
 
@@ -94,7 +98,74 @@ class BPE_Tokenizer:
                     token_id = self.vocab_reversed.get(token)
                     if token_id is not None:
                         yield token_id
-       
+    
+    
+    def _encode_chunk_to_tmpfile(self, lines: list[str], dtype=np.uint16):
+        """
+        Worker 函数：把一块 lines 编码成 token IDs，并写入临时 npy 文件
+        返回临时文件路径和 token 数量
+        """
+        token_ids = []
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            token_ids.extend(self.encode(line))
+        # 创建临时文件保存 token_ids
+        tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".npy")
+        np.save(tmp_file, np.array(token_ids, dtype=dtype))
+        tmp_file.close()
+        return tmp_file.name, len(token_ids)
+
+    
+    def encode_to_npfile(self, input_path: str, output_path: str, chunk_size: int=100_000, max_workers: int=8, dtype=np.uint16):
+        """
+        将输入文本文件编码为 token IDs, 并保存为 .npy 文件
+        Args:
+            input_path: 文本文件路径
+            output_path: 保存的 npy 文件路径
+            chunk_size: 每个 chunk 的行数
+            max_workers: 并行进程数
+            dtype: 保存 token ID 的类型, uint16 足够大多数 vocab
+        """
+
+        tmp_files = []
+        total_tokens = 0
+
+        # 1. 创建进程池
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
+
+            # 2. 按行分块提交给进程池
+            chunk_lines = []
+            with open(input_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    chunk_lines.append(line)
+                    if len(chunk_lines) >= chunk_size:
+                        futures.append(executor.submit(BPE_Tokenizer._encode_chunk_to_tmpfile, self, chunk_lines, dtype))
+                        chunk_lines = []
+                # 处理剩余行
+                if chunk_lines:
+                    futures.append(executor.submit(BPE_Tokenizer._encode_chunk_to_tmpfile, self, chunk_lines, dtype))
+
+            # 3. 收集每个 chunk 的结果
+            for future in tqdm(futures, desc="多进程编码进度"):
+                tmp_file, n_tokens = future.result()
+                tmp_files.append((tmp_file, n_tokens))
+                total_tokens += n_tokens
+
+        # 4. 按顺序合并临时文件到最终 npy
+        print(f"总 token 数量: {total_tokens}, 正在合并到 {output_path} ...")
+        # memmap 方式创建最终文件
+        out_array = np.memmap(output_path, dtype=dtype, mode='w+', shape=(total_tokens,))
+        cursor = 0
+        for tmp_file, n_tokens in tmp_files:
+            tmp_array = np.load(tmp_file)
+            out_array[cursor:cursor + n_tokens] = tmp_array
+            cursor += n_tokens
+            os.remove(tmp_file)  # 删除临时文件
+        del out_array  # 确保 memmap 刷新写入磁盘
+        print(f"✅ 保存完成: {output_path}")
     @staticmethod
     def _get_pre_tokenize_list_iter(text: str, special_tokens: list[str]| None) -> Iterator[list[bytes]]:
         PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
@@ -549,7 +620,7 @@ def main():
 
     start_time = time.time()
     vocab, merges = train_bpe(
-        input_path='/data/CS336-use/owt_train.txt',
+        input_path='/data/CS336-use/TinyStoriesV2-GPT4-train.txt',
         # input_path='/home/rj/WorkingOn/1-CS336/assignment1/cs336_basics/in.txt',
         vocab_size=10000,
         special_tokens=["<|endoftext|>"],
@@ -559,7 +630,7 @@ def main():
     print(f"Training completed in {(end_time - start_time):.2f} seconds.")
     print(f"Vocab size: {len(vocab)}")
     print(f"Longest token: {max(vocab.values(), key=len)} (length={len(max(vocab.values(), key=len))})")
-    BPE_Tokenizer.save_bpe_model(vocab, merges, "bpe_on_OpenWebText_train")
+    BPE_Tokenizer.save_bpe_model(vocab, merges, "bpe_on_TinyStories_train")
 
 if __name__ == "__main__":
     main()
