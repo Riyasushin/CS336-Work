@@ -86,8 +86,15 @@ class SGDOptimizer(torch.optim.Optimizer):
 
 class RJAdamW(torch.optim.Optimizer):
     def __init__(self, params: Iterable[torch.Tensor] | Iterable[Dict[str, Any]] | Iterable[Tuple[str, torch.Tensor]], lr, betas =(0.9, 0.999), weight_decay=0.01, eps=1e-8) -> None:
-        if lr < 0:
-            raise ValueError(f'Invalid learning rate: {lr}')
+        if not 0.0 <= lr:
+            raise ValueError(f"Invalid learning rate: {lr}")
+        if not 0.0 <= eps:
+            raise ValueError(f"Invalid epsilon value: {eps}")
+        if not 0.0 <= betas[0] < 1.0:
+            raise ValueError(f"Invalid beta parameter at index 0: {betas[0]}")
+        if not 0.0 <= betas[1] < 1.0:
+            raise ValueError(f"Invalid beta parameter at index 1: {betas[1]}")
+        
         defaults: Dict[str, Any] = {
             "lr": lr,
             "betas": betas,
@@ -116,6 +123,10 @@ class RJAdamW(torch.optim.Optimizer):
                 t = state.get("t", 1) # Get iteration number from the state, or initial value 1
                 
                 grad = p.grad.data
+                
+                # 从标准答案抄的
+                if grad.is_sparse:
+                    raise RuntimeError("Adam does not support sparse gradients")
                 
                 state['m'] = beta1 * state['m'] + (1 - beta1) * grad
                 
