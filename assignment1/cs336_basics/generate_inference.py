@@ -88,4 +88,4 @@ def decode_batch(prompts: list[str], model: torch.nn.Module, tokenizer: BPE_Toke
         if finished_mask.all():
             break
     
-    return generated_tokens
+    return [tokenizer.decode(per_set) for per_set in generated_tokens]

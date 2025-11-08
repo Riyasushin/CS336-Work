@@ -434,9 +434,10 @@ class RJTransformerLM(nn.Module):
     
     def forward(self, token_ids: torch.Tensor):
         x = self.token_embedding(token_ids)
-        
+        seq_length = token_ids.size(1)
+        positions = torch.arange(seq_length, device=token_ids.device).unsqueeze(0).expand_as(token_ids)
         for block in self.blocks:
-            x = block(x, None) # positions ?
+            x = block(x, positions) # positions ?
         
         x = self.norm(x)
         logits = self.output_embedding(x)
