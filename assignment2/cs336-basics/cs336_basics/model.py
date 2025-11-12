@@ -15,6 +15,7 @@ from jaxtyping import Float, Bool, Int
 
 
 from .nn_utils import softmax
+import torch.cuda.nvtx as nvtx
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class Linear(nn.Module):
             requires_grad=True
         )
 
+    @nvtx.range("Linear")
     def forward(self, x: Float[Tensor, " ... d_in"]) -> Float[Tensor, " ... d_out"]:
         return einsum(x, self.weight, "... d_in, d_out d_in -> ... d_out")
     
@@ -53,6 +55,7 @@ class Embedding(nn.Module):
             requires_grad=True
         )
     
+    @nvtx.range("Embedding")
     def forward(self, token_ids: Int[Tensor, " ..."]) -> Float[Tensor, " ... d_model"]:
         return self.weight[token_ids, :]
     
@@ -85,6 +88,7 @@ class RMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size, device=device))
         self.eps = eps
 
+    @nvtx.range("RMSNorm")
     def forward(self, x):
         """
         Args:
@@ -131,6 +135,7 @@ class RotaryEmbedding(nn.Module):
         cos, sin = torch.cos(freqs), torch.sin(freqs)
         return torch.stack((cos, sin))
 
+    @nvtx.range("RoPE")
     def forward(self, x: Float[Tensor, " ... seq d"], pos_ids: Int[Tensor, " ... seq"]) -> Float[Tensor, " ... seq d"]:
         x1, x2 = rearrange(x, '... (half_d xy) -> xy ... half_d', xy=2)
 
@@ -240,17 +245,22 @@ class BasicsTransformerLM(nn.Module):
         _, sequence_length = x.size()
 
         # (batch size, sequence_length, d_model)
-        x = self.token_embeddings(x)
+        with nvtx.range("LM embedding stage:"):
+            x = self.token_embeddings(x)
 
-        for layer in self.layers:
-            # (batch size, sequence_length, d_model)
-            x = layer(x)
+        with nvtx.range("LM transformer layers:"):
+            for layer in self.layers:
+                # (batch size, sequence_length, d_model)
+                x = layer(x)
 
         # (batch size, sequence_length, d_model)
-        x = self.ln_final(x)
+        with nvtx.range("final layer norm stage:"):
+            x = self.ln_final(x)
 
         # (batch size, sequence_length, vocab_size)
-        return self.lm_head(x)
+        with nvtx.range("Finnal FFN stage:"):
+            x = self.lm_head(x)
+        return x
 
     @torch.no_grad()
     def generate(
@@ -377,12 +387,14 @@ class TransformerBlock(nn.Module):
         # NOTE: this is a pre-norm Transformer, and differs from the original
         # description in the paper.
         # Apply the multi-head self-attention sublayer
-        x_attn = self.attn(self.ln1(x))
-        attn_sublayer_output = x + x_attn
+        with nvtx.range("transformer Block, all compute x_attention:"):
+            x_attn = self.attn(self.ln1(x))
+            attn_sublayer_output = x + x_attn
 
         # Apply the feed-forward sublayer
-        x_ffn = self.ffn(self.ln2(attn_sublayer_output))
-        ffn_sublayer_output = attn_sublayer_output + x_ffn
+        with nvtx.range("transformer Block, all compute ffn:"):
+            x_ffn = self.ffn(self.ln2(attn_sublayer_output))
+            ffn_sublayer_output = attn_sublayer_output + x_ffn
         return ffn_sublayer_output
 
 
@@ -394,9 +406,10 @@ class SwiGLU(nn.Module):
         self.w3 = Linear(d_model, d_ff)
 
     def forward(self, x):
+        
         return self.w2(silu(self.w1(x)) * self.w3(x))
 
-
+@nvtx.range("scaled dot product attention")
 def scaled_dot_product_attention(
     Q: Float[Tensor, " ... queries d_k"],
     K: Float[Tensor, " ... keys    d_k"],
@@ -420,14 +433,14 @@ def scaled_dot_product_attention(
         with the output of running your scaled dot product attention
         implementation with the provided key, query, and value tensors.
     """
+    with nvtx.range("compute attention_scores"):
+        d_k = K.shape[-1]
+        attention_scores = einsum(Q, K, "... query d_k, ... key d_k -> ... query key") / math.sqrt(d_k)
 
-    d_k = K.shape[-1]
-    attention_scores = einsum(Q, K, "... query d_k, ... key d_k -> ... query key") / math.sqrt(d_k)
-
-    if mask is not None:
-        attention_scores = torch.where(mask, attention_scores, float("-inf"))
-
-    attention_weights = softmax(attention_scores, dim=-1)  # Softmax over the key dimension
+        if mask is not None:
+            attention_scores = torch.where(mask, attention_scores, float("-inf"))
+    with nvtx.range("compute attention_weights"):
+        attention_weights = softmax(attention_scores, dim=-1)  # Softmax over the key dimension
 
     return einsum(attention_weights, V, "... query key, ... key d_v ->  ... query d_v")
 
