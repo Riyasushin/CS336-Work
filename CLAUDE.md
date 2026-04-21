@@ -37,23 +37,24 @@ Tiny-Training/
 ├── CLAUDE.md                         # 本文件
 ├── pyproject.toml                    # uv workspace root（虚拟，不打包）
 ├── uv.lock
-├── Tiny-Training-basic/              # 包 tiny-training-basic（已建骨架 + 迁入 A1 tests/fixtures）
-│   ├── pyproject.toml
+├── Tiny-Training-basic/              # 包 tiny-training-basic（含 A1 tests/fixtures，25 tests FAIL@NotImpl）
+│   ├── pyproject.toml                # setuptools，package_dir 把 src/ 映射为 tiny_training_basic
 │   ├── README.md
-│   ├── src/tiny_training_basic/      # 仅 __init__.py + pretokenization_example.py
-│   └── tests/                        # 全量迁入，48 个测试全部 FAIL@NotImplementedError（预期起点）
+│   ├── docs/cs336_assignment1_basics.pdf
+│   ├── src/                          # 代码直接在这里（仅 __init__.py，待实现）
+│   └── tests/                        # adapters / conftest / test_*.py / fixtures / _snapshots
 ├── Tiny-Training-System/             # 空壳（待整合 A2 + PA2 + PA3）
 │   ├── pyproject.toml
 │   ├── README.md
-│   └── src/tiny_training_system/__init__.py
+│   └── src/__init__.py
 ├── Tiny-Training-Data/               # 空壳（待整合 A4）
 │   ├── pyproject.toml
 │   ├── README.md
-│   └── src/tiny_training_data/__init__.py
+│   └── src/__init__.py
 ├── Tiny-Training-RL/                 # 空壳（待整合 A5）
 │   ├── pyproject.toml
 │   ├── README.md
-│   └── src/tiny_training_rl/__init__.py
+│   └── src/__init__.py
 ├── assignment1-basics/               # 只读参考（待整合完删除）
 ├── assignment2-systems/              # 只读参考
 ├── assignment4-data/                 # 只读参考
@@ -82,6 +83,8 @@ Tiny-Training/
 | `Tiny-Training-System/` | `tiny-training-system` | `tiny_training_system` |
 | `Tiny-Training-Data/` | `tiny-training-data` | `tiny_training_data` |
 | `Tiny-Training-RL/` | `tiny-training-rl` | `tiny_training_rl` |
+
+每个包的 `src/` 目录通过 setuptools 的 `package_dir` 被映射为对应 import 名（避免 4 个包的目录都叫 `src` 互相冲突）。Flat，无 `src/<pkg>/` 嵌套。
 
 ## 参考 repo 覆盖面清单
 
