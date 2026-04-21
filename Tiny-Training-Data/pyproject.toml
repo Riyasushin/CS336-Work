@@ -1,0 +1,20 @@
+[project]
+name = "tiny-training-data"
+version = "0.0.0"
+description = "Tiny-Training data layer: filtering / dedup / quality classification"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "tiny-training-basic",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.0,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "tiny_training_data"
+module-root = "src"
+
+[tool.uv.sources]
+tiny-training-basic = { workspace = true }

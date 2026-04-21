@@ -163,7 +163,8 @@ cython_debug/
 .ruff_cache/
 *.zip
 
-
+assignment1-basics
 assignment2-systems
+assignment4-data
 assignment5-alignment
 cse234-w25-PA

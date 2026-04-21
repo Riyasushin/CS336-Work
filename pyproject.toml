@@ -1,47 +1,52 @@
 [project]
 name = "tiny-training"
-version = "0.1.0"
-description = "Unified framework for learning LLM training from scratch"
+version = "0.0.0"
+description = "Tiny-Training: a modular LLM training framework (workspace root)"
+readme = "readme.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
-    "torch~=2.11.0",
-    "numpy>=2.0",
-    "einops>=0.8",
-    "pytest>=9.0",
-    "psutil>=7",        # used by cs336_basics tokenizer tests
-    "tiktoken>=0.12",   # used by cs336_basics tokenizer tests
-    "regex>=2024.0",    # used by cs336_basics tokenizer + BPE
-    "jaxtyping>=0.3",   # type annotations used throughout cs336 tests
+    "tiny-training-basic",
+    "tiny-training-system",
+    "tiny-training-data",
+    "tiny-training-rl",
 ]
 
-[project.optional-dependencies]
-data = [
-    "resiliparse",
-    "fasttext",
-    "mmh3",
-    "nltk",
-    "xopen",
-    "fastwarc",
-    "tldextract",
+[dependency-groups]
+dev = [
+    "pytest>=9.0",
+    "pytest-timeout",
+    "ruff>=0.15.8",
+    "ty>=0.0.26",
 ]
-# NOTE: alignment pins are loose to avoid torch conflicts with the base env
-# during universal resolution. Week 8 pins (vllm==0.7.2, flash-attn==2.7.4.post1)
-# from the original assignment5-alignment pyproject require torch==2.5.1; install
-# those into a separate venv if you need bit-exact reproducibility:
-#     uv venv .venv-alignment --python 3.12
-#     .venv-alignment/bin/pip install vllm==0.7.2 flash-attn==2.7.4.post1 ...
-alignment = [
-    "transformers>=4.50",
-    "accelerate>=1.5",
-    "math-verify",
-]
-dev = ["ruff>=0.15"]
 
 [tool.uv]
 package = false
 
+[tool.uv.workspace]
+members = [
+    "Tiny-Training-basic",
+    "Tiny-Training-System",
+    "Tiny-Training-Data",
+    "Tiny-Training-RL",
+]
+
+[tool.uv.sources]
+tiny-training-basic = { workspace = true }
+tiny-training-system = { workspace = true }
+tiny-training-data = { workspace = true }
+tiny-training-rl = { workspace = true }
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["UP"]
+ignore = ["F722"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"__init__.py" = ["E402", "F401", "F403", "E501"]
+
 [tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["tests"]
 log_cli = true
 log_cli_level = "WARNING"
+addopts = "-s"
