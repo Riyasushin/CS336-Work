@@ -5,6 +5,8 @@ from einops import rearrange
 
 from .adapters import (
     run_embedding,
+    run_grouped_query_self_attention,
+    run_grouped_query_self_attention_with_rope,
     run_linear,
     run_multihead_self_attention,
     run_multihead_self_attention_with_rope,
@@ -16,6 +18,54 @@ from .adapters import (
     run_transformer_block,
     run_transformer_lm,
 )
+
+
+def _apply_rope_interleaved(x: torch.Tensor, theta: float, positions: torch.Tensor) -> torch.Tensor:
+    """Reference RoPE with interleaved pairing (dims 2i, 2i+1 form a pair).
+
+    x: (..., seq_len, d_head); positions: (..., seq_len).
+    """
+    d = x.shape[-1]
+    assert d % 2 == 0
+    freqs = 1.0 / (theta ** (torch.arange(0, d, 2, dtype=torch.float32) / d))
+    angles = positions.unsqueeze(-1).float() * freqs  # (..., seq_len, d/2)
+    cos, sin = torch.cos(angles), torch.sin(angles)
+    # broadcast cos/sin onto x's head dim: x is (..., H, L, d); angles is (..., L, d/2)
+    while cos.dim() < x.dim():
+        cos = cos.unsqueeze(-3)
+        sin = sin.unsqueeze(-3)
+    x1, x2 = x[..., 0::2], x[..., 1::2]
+    rx1 = x1 * cos - x2 * sin
+    rx2 = x1 * sin + x2 * cos
+    return torch.stack([rx1, rx2], dim=-1).flatten(-2).to(x.dtype)
+
+
+def _gqa_reference(
+    in_features: torch.Tensor,
+    q_proj_weight: torch.Tensor,
+    k_proj_weight: torch.Tensor,
+    v_proj_weight: torch.Tensor,
+    o_proj_weight: torch.Tensor,
+    n_heads: int,
+    n_kv_heads: int,
+    *,
+    rope: bool = False,
+    theta: float | None = None,
+    positions: torch.Tensor | None = None,
+) -> torch.Tensor:
+    Q = F.linear(in_features, q_proj_weight)
+    K = F.linear(in_features, k_proj_weight)
+    V = F.linear(in_features, v_proj_weight)
+    Q = rearrange(Q, "... l (h d) -> ... h l d", h=n_heads)
+    K = rearrange(K, "... l (h d) -> ... h l d", h=n_kv_heads)
+    V = rearrange(V, "... l (h d) -> ... h l d", h=n_kv_heads)
+    if rope:
+        assert theta is not None and positions is not None
+        Q = _apply_rope_interleaved(Q, theta, positions)
+        K = _apply_rope_interleaved(K, theta, positions)
+    attn = F.scaled_dot_product_attention(Q, K, V, is_causal=True, enable_gqa=True)
+    attn = rearrange(attn, "... h l d -> ... l (h d)")
+    return F.linear(attn, o_proj_weight)
 
 
 def test_linear(numpy_snapshot, ts_state_dict, in_embeddings, d_model, d_ff):
@@ -112,6 +162,61 @@ def test_multihead_self_attention_with_rope(
         token_positions=pos_ids,
     )
     numpy_snapshot.assert_match(actual_output, atol=1e-5)
+
+
+def test_grouped_query_self_attention(in_embeddings, d_model, n_heads, n_kv_heads, d_head):
+    torch.manual_seed(42)
+    q_proj_weight = torch.randn(n_heads * d_head, d_model)
+    k_proj_weight = torch.randn(n_kv_heads * d_head, d_model)
+    v_proj_weight = torch.randn(n_kv_heads * d_head, d_model)
+    o_proj_weight = torch.randn(d_model, n_heads * d_head)
+
+    actual = run_grouped_query_self_attention(
+        d_model=d_model,
+        num_heads=n_heads,
+        num_kv_heads=n_kv_heads,
+        q_proj_weight=q_proj_weight,
+        k_proj_weight=k_proj_weight,
+        v_proj_weight=v_proj_weight,
+        o_proj_weight=o_proj_weight,
+        in_features=in_embeddings,
+    )
+    expected = _gqa_reference(
+        in_embeddings, q_proj_weight, k_proj_weight, v_proj_weight, o_proj_weight,
+        n_heads=n_heads, n_kv_heads=n_kv_heads,
+    )
+    torch.testing.assert_close(actual, expected, atol=1e-5, rtol=1e-4)
+
+
+def test_grouped_query_self_attention_with_rope(
+    in_embeddings, d_model, n_heads, n_kv_heads, d_head, n_queries, theta, pos_ids
+):
+    torch.manual_seed(43)
+    q_proj_weight = torch.randn(n_heads * d_head, d_model)
+    k_proj_weight = torch.randn(n_kv_heads * d_head, d_model)
+    v_proj_weight = torch.randn(n_kv_heads * d_head, d_model)
+    o_proj_weight = torch.randn(d_model, n_heads * d_head)
+    positions = rearrange(pos_ids, "seq -> 1 seq")
+
+    actual = run_grouped_query_self_attention_with_rope(
+        d_model=d_model,
+        num_heads=n_heads,
+        num_kv_heads=n_kv_heads,
+        max_seq_len=n_queries,
+        theta=theta,
+        q_proj_weight=q_proj_weight,
+        k_proj_weight=k_proj_weight,
+        v_proj_weight=v_proj_weight,
+        o_proj_weight=o_proj_weight,
+        in_features=in_embeddings,
+        token_positions=positions,
+    )
+    expected = _gqa_reference(
+        in_embeddings, q_proj_weight, k_proj_weight, v_proj_weight, o_proj_weight,
+        n_heads=n_heads, n_kv_heads=n_kv_heads,
+        rope=True, theta=theta, positions=positions,
+    )
+    torch.testing.assert_close(actual, expected, atol=1e-5, rtol=1e-4)
 
 
 def test_transformer_lm(

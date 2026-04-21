@@ -181,6 +181,78 @@ def run_multihead_self_attention_with_rope(
     raise NotImplementedError
 
 
+def run_grouped_query_self_attention(
+    d_model: int,
+    num_heads: int,
+    num_kv_heads: int,
+    q_proj_weight: Float[Tensor, " d_model d_model"],
+    k_proj_weight: Float[Tensor, " num_kv_heads*d_head d_model"],
+    v_proj_weight: Float[Tensor, " num_kv_heads*d_head d_model"],
+    o_proj_weight: Float[Tensor, " d_model d_model"],
+    in_features: Float[Tensor, " ... sequence_length d_model"],
+) -> Float[Tensor, " ... sequence_length d_model"]:
+    """
+    Grouped Query Attention (GQA) without RoPE.
+
+    `num_heads` Q heads share `num_kv_heads` K/V heads; `num_heads` must be divisible
+    by `num_kv_heads`. Each Q head within a group attends to the same K/V head. When
+    `num_kv_heads == num_heads` this reduces to standard MHA; `num_kv_heads == 1` is MQA.
+
+    Uses causal attention (lower-triangular mask).
+
+    Args:
+        d_model: Input/output feature dimension; must equal `num_heads * d_head`.
+        num_heads: Number of Q heads.
+        num_kv_heads: Number of K/V heads.
+        q_proj_weight: Shape `(num_heads * d_head, d_model)`.
+        k_proj_weight: Shape `(num_kv_heads * d_head, d_model)`.
+        v_proj_weight: Shape `(num_kv_heads * d_head, d_model)`.
+        o_proj_weight: Shape `(d_model, num_heads * d_head)`.
+        in_features: Shape `(..., sequence_length, d_model)`.
+
+    Returns:
+        Tensor of shape `(..., sequence_length, d_model)`.
+    """
+    raise NotImplementedError
+
+
+def run_grouped_query_self_attention_with_rope(
+    d_model: int,
+    num_heads: int,
+    num_kv_heads: int,
+    max_seq_len: int,
+    theta: float,
+    q_proj_weight: Float[Tensor, " d_model d_model"],
+    k_proj_weight: Float[Tensor, " num_kv_heads*d_head d_model"],
+    v_proj_weight: Float[Tensor, " num_kv_heads*d_head d_model"],
+    o_proj_weight: Float[Tensor, " d_model d_model"],
+    in_features: Float[Tensor, " ... sequence_length d_model"],
+    token_positions: Int[Tensor, " ... sequence_length"] | None = None,
+) -> Float[Tensor, " ... sequence_length d_model"]:
+    """
+    GQA + RoPE. RoPE is applied to Q and K per-head (on `d_head = d_model // num_heads`)
+    before scaled dot-product attention. Causal attention.
+
+    RoPE convention: interleaved pairs — dimensions `(2i, 2i+1)` are rotated as a
+    2-vector by angle `m / theta^(2i/d_head)`, where `m` is the token position.
+    The adapter must use this convention to match the test reference.
+
+    Args:
+        d_model, num_heads, num_kv_heads: see `run_grouped_query_self_attention`.
+        max_seq_len: Maximum sequence length to pre-cache if your implementation does that.
+        theta: RoPE base.
+        q_proj_weight, k_proj_weight, v_proj_weight, o_proj_weight:
+            same shapes as `run_grouped_query_self_attention`.
+        in_features: Shape `(..., sequence_length, d_model)`.
+        token_positions: Optional `(..., sequence_length)` int tensor; if None,
+            positions default to `arange(sequence_length)` per batch element.
+
+    Returns:
+        Tensor of shape `(..., sequence_length, d_model)`.
+    """
+    raise NotImplementedError
+
+
 def run_rope(
     d_k: int,
     theta: float,

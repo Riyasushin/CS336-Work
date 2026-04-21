@@ -234,6 +234,12 @@ def n_heads():
 
 
 @pytest.fixture
+def n_kv_heads():
+    # Q heads / KV heads = 2 (group size 2); paired with n_heads=4
+    return 2
+
+
+@pytest.fixture
 def d_head():
     return 16
 
