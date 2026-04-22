@@ -20,8 +20,11 @@ from .adapters import (
 )
 
 
-def _apply_rope_interleaved(x: torch.Tensor, theta: float, positions: torch.Tensor) -> torch.Tensor:
-    """Reference RoPE with interleaved pairing (dims 2i, 2i+1 form a pair).
+def _apply_rope_half_rotated(x: torch.Tensor, theta: float, positions: torch.Tensor) -> torch.Tensor:
+    """Reference RoPE with half-rotated pairing (dim i pairs with i+d/2), Qwen/Llama/HF style.
+
+    Complex number k = x[k] + i*x[k+d/2] for k in [0, d/2), rotated by m*theta_k with
+    theta_k = 1 / theta^(2k/d). Matches `transformers.models.llama.modeling_llama.apply_rotary_pos_emb`.
 
     x: (..., seq_len, d_head); positions: (..., seq_len).
     """
@@ -29,15 +32,15 @@ def _apply_rope_interleaved(x: torch.Tensor, theta: float, positions: torch.Tens
     assert d % 2 == 0
     freqs = 1.0 / (theta ** (torch.arange(0, d, 2, dtype=torch.float32) / d))
     angles = positions.unsqueeze(-1).float() * freqs  # (..., seq_len, d/2)
-    cos, sin = torch.cos(angles), torch.sin(angles)
-    # broadcast cos/sin onto x's head dim: x is (..., H, L, d); angles is (..., L, d/2)
+    cos = torch.cat([torch.cos(angles), torch.cos(angles)], dim=-1)  # (..., seq_len, d)
+    sin = torch.cat([torch.sin(angles), torch.sin(angles)], dim=-1)
+    # broadcast onto x's head dim: x is (..., H, L, d); cos/sin are (..., L, d).
     while cos.dim() < x.dim():
         cos = cos.unsqueeze(-3)
         sin = sin.unsqueeze(-3)
-    x1, x2 = x[..., 0::2], x[..., 1::2]
-    rx1 = x1 * cos - x2 * sin
-    rx2 = x1 * sin + x2 * cos
-    return torch.stack([rx1, rx2], dim=-1).flatten(-2).to(x.dtype)
+    x1, x2 = x[..., : d // 2], x[..., d // 2 :]
+    rotate_half = torch.cat([-x2, x1], dim=-1)
+    return (x * cos + rotate_half * sin).to(x.dtype)
 
 
 def _gqa_reference(
@@ -61,8 +64,8 @@ def _gqa_reference(
     V = rearrange(V, "... l (h d) -> ... h l d", h=n_kv_heads)
     if rope:
         assert theta is not None and positions is not None
-        Q = _apply_rope_interleaved(Q, theta, positions)
-        K = _apply_rope_interleaved(K, theta, positions)
+        Q = _apply_rope_half_rotated(Q, theta, positions)
+        K = _apply_rope_half_rotated(K, theta, positions)
     attn = F.scaled_dot_product_attention(Q, K, V, is_causal=True, enable_gqa=True)
     attn = rearrange(attn, "... h l d -> ... l (h d)")
     return F.linear(attn, o_proj_weight)
@@ -142,14 +145,14 @@ def test_multihead_self_attention(numpy_snapshot, in_embeddings, d_model, n_head
 
 
 def test_multihead_self_attention_with_rope(
-    numpy_snapshot, in_embeddings, d_model, n_heads, ts_state_dict, n_keys, theta, pos_ids
+    in_embeddings, d_model, n_heads, ts_state_dict, n_keys, theta, pos_ids
 ):
     d, _ = ts_state_dict
     q_proj_weight, k_proj_weight, v_proj_weight, o_proj_weight = [
         d[f"layers.0.attn.{k}_proj.weight"] for k in ["q", "k", "v", "output"]
     ]
     pos_ids = rearrange(pos_ids, "seq -> 1 seq")
-    actual_output = run_multihead_self_attention_with_rope(
+    actual = run_multihead_self_attention_with_rope(
         d_model=d_model,
         num_heads=n_heads,
         max_seq_len=n_keys,
@@ -161,7 +164,12 @@ def test_multihead_self_attention_with_rope(
         in_features=in_embeddings,
         token_positions=pos_ids,
     )
-    numpy_snapshot.assert_match(actual_output, atol=1e-5)
+    expected = _gqa_reference(
+        in_embeddings, q_proj_weight, k_proj_weight, v_proj_weight, o_proj_weight,
+        n_heads=n_heads, n_kv_heads=n_heads,
+        rope=True, theta=theta, positions=pos_ids,
+    )
+    torch.testing.assert_close(actual, expected, atol=1e-5, rtol=1e-4)
 
 
 def test_grouped_query_self_attention(in_embeddings, d_model, n_heads, n_kv_heads, d_head):
@@ -219,6 +227,9 @@ def test_grouped_query_self_attention_with_rope(
     torch.testing.assert_close(actual, expected, atol=1e-5, rtol=1e-4)
 
 
+# NOTE: transformer_block / transformer_lm snapshots below were generated with
+# classic interleaved RoPE. After switching run_rope to half-rotated (Qwen/Llama) convention,
+# these snapshots are stale and must be regenerated once the adapters are implemented.
 def test_transformer_lm(
     numpy_snapshot, vocab_size, n_keys, d_model, n_layers, n_heads, d_ff, theta, ts_state_dict, in_indices
 ):
@@ -288,11 +299,12 @@ def test_rmsnorm(numpy_snapshot, ts_state_dict, in_embeddings):
     numpy_snapshot.assert_match(actual_output, atol=1e-4)
 
 
-def test_rope(numpy_snapshot, in_embeddings, d_model, theta, n_queries, pos_ids):
-    output = run_rope(
+def test_rope(in_embeddings, d_model, theta, n_queries, pos_ids):
+    actual = run_rope(
         d_model, theta=theta, max_seq_len=n_queries, in_query_or_key=in_embeddings, token_positions=pos_ids
     )
-    numpy_snapshot.assert_match(output, atol=1e-5)
+    expected = _apply_rope_half_rotated(in_embeddings, theta, pos_ids)
+    torch.testing.assert_close(actual, expected, atol=1e-5, rtol=1e-4)
 
 
 def test_silu_matches_pytorch():

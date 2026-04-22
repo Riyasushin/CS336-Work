@@ -68,6 +68,10 @@ class NumpySnapshot[A: (np.ndarray, Tensor)]:
         arrays_dict = actual if isinstance(actual, dict) else {"array": actual}
         arrays_dict = {k: _canonicalize_array(v) for k, v in arrays_dict.items()}
 
+        if force_update:
+            np.savez(snapshot_path, **arrays_dict)
+            return
+
         # Load the snapshot
         expected_arrays = dict(np.load(snapshot_path))
 
@@ -176,7 +180,7 @@ def numpy_snapshot(request):
             result = my_function()
             numpy_snapshot.assert_match(result, "my_test_name")
     """
-    force_update = False
+    force_update = os.environ.get("SNAPSHOT_UPDATE", "0") == "1"
 
     match_exact = request.config.getoption("--snapshot-exact", default=False)
 
