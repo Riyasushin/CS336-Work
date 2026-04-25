@@ -1,0 +1,24 @@
+{
+    "_comment": "PA3 Part 2.2 自选模型：在 5M 美元（A100 + MFU 0.4）预算下，根据 PDF 给的 scaling law 解出的最优大约 N≈47.5B / D≈2.0T tokens。这里取 N=44.7B（略低于最优，留出验证集 / warm-up 余量），并采用 Llama-3 风格的 GQA + 大词表设计。",
+    "architectures": [
+        "LlamaForCausalLM"
+    ],
+    "model_type": "llama",
+    "hidden_act": "silu",
+    "hidden_size": 7168,
+    "intermediate_size": 19456,
+    "num_hidden_layers": 80,
+    "num_attention_heads": 56,
+    "num_key_value_heads": 8,
+    "max_position_embeddings": 8192,
+    "max_sequence_length": 8192,
+    "vocab_size": 128256,
+    "rms_norm_eps": 1e-06,
+    "tie_word_embeddings": false,
+    "torch_dtype": "float16",
+    "bos_token_id": 1,
+    "eos_token_id": 2,
+    "pad_token_id": 0,
+    "_planned_training_tokens": 2.09e12,
+    "_planned_training_flops": 5.6e23
+}
