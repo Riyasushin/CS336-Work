@@ -1,0 +1,14 @@
+{
+  "model": "/data/CS336-use/models/Qwen2.5-Math-1.5B",
+  "dataset": "/data/CS336-use/assignment5-alignment/gsm8k/test.jsonl",
+  "prompt_name": "r1_zero",
+  "limit": 256,
+  "backend": "hf",
+  "n_examples": 256,
+  "elapsed_sec": 190.14856293611228,
+  "throughput_examples_per_sec": 1.3463157230697191,
+  "count_format1_answer1": 4,
+  "count_format1_answer0": 46,
+  "count_format0_answer0": 206,
+  "accuracy": 0.015625
+}

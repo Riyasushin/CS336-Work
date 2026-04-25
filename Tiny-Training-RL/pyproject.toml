@@ -7,6 +7,33 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "tiny-training-basic",
     "torch~=2.11.0",
+    "transformers>=4.50",
+    "tqdm>=4.67",
+    "httpx[socks]>=0.28.1",
+    "pydantic>=2,<3",
+]
+
+# 可选依赖按用途分组：核心装包不污染，按需 `uv sync --extra <name>`。
+# - eval:   跑 §3 / §4 / §5 / §7 / §9 评测时需要 vLLM（高吞吐推理）
+# - grader: drgrpo_grader.py 的 LaTeX/sympy 答案判定栈
+# - train:  实际训练时需要的工具
+[project.optional-dependencies]
+eval = ["vllm"]
+grader = [
+    "math-verify[antlr4_13_2]>=0.7",
+    "latex2sympy2_extended",
+    "pylatexenc==2.10",
+    "sympy>=1.13",
+]
+train = ["wandb>=0.19", "typer>=0.15"]
+all = [
+    "vllm",
+    "math-verify[antlr4_13_2]>=0.7",
+    "latex2sympy2_extended",
+    "pylatexenc==2.10",
+    "sympy>=1.13",
+    "wandb>=0.19",
+    "typer>=0.15",
 ]
 
 [build-system]
@@ -14,8 +41,18 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["tiny_training_rl"]
-package-dir = { "tiny_training_rl" = "src" }
+packages = ["tiny_training_rl", "tiny_training_rl.prompts"]
+package-dir = { "tiny_training_rl" = "src", "tiny_training_rl.prompts" = "src/prompts" }
+include-package-data = true
+
+# 把 .prompt 文本当成包数据，importlib.resources 能拿到
+[tool.setuptools.package-data]
+"tiny_training_rl.prompts" = ["*.prompt"]
 
 [tool.uv.sources]
 tiny-training-basic = { workspace = true }
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "WARNING"
+addopts = "-s"

@@ -1,0 +1,10 @@
+{
+  "model": "/data/CS336-use/models/Qwen2.5-Math-1.5B",
+  "n_examples": 64,
+  "elapsed_sec": 24.11475769500248,
+  "throughput_examples_per_sec": 2.6539764906393106,
+  "n_correct": 25,
+  "n_parse_fail": 3,
+  "accuracy": 0.390625,
+  "parse_fail_rate": 0.046875
+}
