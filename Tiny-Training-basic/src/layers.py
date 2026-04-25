@@ -5,6 +5,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 
+# 上位替代: 能走 FA2 Triton kernel 就走 FA2 (CUDA + 支持 dtype + bool mask), 否则透传 F.sdpa
+# 这样 CPU / unsupported shape / float attn_mask 等场景行为不变, 只是在 GPU 训练时自动加速
+from tiny_training_basic.kernels.fa2 import scaled_dot_product_attention as _sdpa_maybe_flash
+
 
 def rsilu(x: torch.Tensor) -> torch.Tensor:
     """
@@ -359,7 +363,7 @@ class RGroupedQueryAttention(nn.Module):
             Q = self.rope(Q, token_positions)
             K = self.rope(K, token_positions)
 
-        attn = F.scaled_dot_product_attention(Q, K, V, is_causal=True, enable_gqa=True)
+        attn = _sdpa_maybe_flash(Q, K, V, is_causal=True, enable_gqa=True)
         attn = rearrange(attn, "... h l d -> ... l (h d)")
         return self.output_proj(attn)
 
