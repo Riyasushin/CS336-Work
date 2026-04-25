@@ -202,13 +202,20 @@ class RRMSNorm(nn.Module):
         eps: float = 1e-5,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
+        use_fused: bool = False,
     ) -> None:
         super().__init__()
         self.d_model = d_model
         self.eps = eps
+        self.use_fused = use_fused
         self.weight = nn.Parameter(torch.ones(d_model, device=device, dtype=dtype))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # 上位替代: GPU + use_fused 走 Triton fused kernel; 否则原 PyTorch 路径。
+        # CPU / 测试 / 关闭开关时行为完全不变, 接入是无侵入的。
+        if self.use_fused and x.is_cuda:
+            from tiny_training_basic.kernels.fused_norm import FusedRMSNorm
+            return FusedRMSNorm.apply(x, self.weight, self.eps)
         in_type = x.dtype
         x = x.to(torch.float32)
         rms = torch.sqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
