@@ -318,25 +318,3 @@ def fused_rmsnorm_inplace(x: torch.Tensor, weight: torch.Tensor, eps: float = 1e
     )
     return x
 
-
-# ---------------------------------------------------------------------------
-# LayerNorm 占位 (本轮先只做 RMSNorm; LN 的实装思路相同, 多一步 mean 与 bias)
-# ---------------------------------------------------------------------------
-
-
-class FusedLayerNorm(torch.autograd.Function):
-    """Fused LayerNorm forward/backward (Triton). 待实装。"""
-
-    @staticmethod
-    def forward(
-        ctx,
-        x: torch.Tensor,
-        weight: torch.Tensor,
-        bias: torch.Tensor | None = None,
-        eps: float = 1e-5,
-    ):
-        raise NotImplementedError
-
-    @staticmethod
-    def backward(ctx, dY: torch.Tensor):
-        raise NotImplementedError
